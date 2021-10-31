@@ -82,6 +82,39 @@ func withDumpMapCmd(file string) bpftoolOption {
 	return withCmd(cmd)
 }
 
+func withLookUpMapCmd(file string, key []byte) bpftoolOption {
+	file = fmt.Sprintf("%s/%s", BPFFS, file)
+	var cmd = fmt.Sprintf("lookup pinned %s key hex", file)
+
+	for i := range key {
+		cmd = fmt.Sprintf("%s %x", cmd, key[i])
+	}
+
+	return withCmd(cmd)
+}
+
+func withDeleteMapCmd(file string, key []byte) bpftoolOption {
+	file = fmt.Sprintf("%s/%s", BPFFS, file)
+	var cmd = fmt.Sprintf("delete pinned %s key hex", file)
+
+	for i := range key {
+		cmd = fmt.Sprintf("%s %x", cmd, key[i])
+	}
+
+	return withCmd(cmd)
+}
+
+func withNextKeyMapCmd(file string, key []byte) bpftoolOption {
+	file = fmt.Sprintf("%s/%s", BPFFS, file)
+	var cmd = fmt.Sprintf("getnext pinned %s key hex", file)
+
+	for i := range key {
+		cmd = fmt.Sprintf("%s %x", cmd, key[i])
+	}
+
+	return withCmd(cmd)
+}
+
 func withUpdateMapCmd(file string, key []byte, value []byte, flag UpdateFlag) bpftoolOption {
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
 	var cmd = fmt.Sprintf("update pinned %s key hex", file)
@@ -109,7 +142,6 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 		buf    []byte
 		err    error
 	)
-	fmt.Println(cmd.String())
 	stdOut, err = cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -135,6 +167,16 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 		}
 	}
 	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *bpftool) unlink(ctx context.Context, file string) error {
+	file = fmt.Sprintf("%s/%s", BPFFS, file)
+	var cmd = exec.CommandContext(ctx, "unlink", file)
+	var err = cmd.Run()
 	if err != nil {
 		return err
 	}

@@ -94,6 +94,11 @@ func Test_op_map(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
+			err = b.unlink(context.TODO(), p.file)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
 		}
 		t.Run(n, f)
 	}
