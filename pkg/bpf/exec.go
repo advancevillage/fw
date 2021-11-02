@@ -11,19 +11,8 @@ import (
 	"strings"
 )
 
-type UpdateFlag string
-type MapType string
-
 const (
 	BPFFS = "/sys/fs/bpf"
-
-	MapTypeHash  = MapType("hash")
-	MapTypeArray = MapType("array")
-	MapTypeLRU   = MapType("lru_hash")
-
-	UpdateFlagAny     = UpdateFlag("any")
-	UpdateFlagExist   = UpdateFlag("exist")
-	UpdateFlagNoexist = UpdateFlag("noexist")
 )
 
 type bpftool struct {
@@ -115,7 +104,7 @@ func withNextKeyMapCmd(file string, key []byte) bpftoolOption {
 	return withCmd(cmd)
 }
 
-func withUpdateMapCmd(file string, key []byte, value []byte, flag UpdateFlag) bpftoolOption {
+func withUpdateMapCmd(file string, key []byte, value []byte, flag string) bpftoolOption {
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
 	var cmd = fmt.Sprintf("update pinned %s key hex", file)
 
@@ -155,7 +144,11 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 	if err != nil {
 		return err
 	}
-	//输出数据
+	//注意:  bpftool map 增加   删除   更新   查询
+	//成功:				 null   null    null   array
+	//失败:              object object  object array
+	//示例:
+	//
 	if json.Valid(buf) {
 		err = json.Unmarshal(buf, reply)
 		if err != nil {
