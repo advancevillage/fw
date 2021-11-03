@@ -2,6 +2,7 @@ package bpf
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -56,6 +57,13 @@ func Test_table(t *testing.T) {
 					return
 				}
 			}
+			//4. 查询
+			act, err := ta.QueryTable(ctx)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
+			fmt.Println(act)
 			//n. 回收表
 			//err = ta.GCTable(ctx)
 			//if err != nil {
