@@ -82,7 +82,7 @@ func (t *table) UpdateTable(ctx context.Context, key []byte, value []byte) error
 	)
 	var r = make(map[string]interface{})
 	var errs = new(bpfErr)
-	var err = ebpf.run(ctx, r, errs)
+	var err = ebpf.run(ctx, &r, errs)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (t *table) DeleteTable(ctx context.Context, key []byte) error {
 	var r = make(map[string]interface{})
 	var errs = new(bpfErr)
 
-	var err = ebpf.run(ctx, r, errs)
+	var err = ebpf.run(ctx, &r, errs)
 	if err != nil {
 		return err
 	}
