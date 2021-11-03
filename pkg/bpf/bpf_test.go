@@ -65,7 +65,8 @@ func Test_table(t *testing.T) {
 			}
 			//5. 输出
 			for i := 0; i < p.maxEntries; i++ {
-				fmt.Printf("%v %v\n", data[i], act[i])
+				fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", i, data[i].Key[0], data[i].Key[1], data[i].Key[2], data[i].Key[3], data[i].Value[0], data[i].Value[1], data[i].Value[2], data[i].Value[3])
+				fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", i, act[i].Key[0], act[i].Key[1], act[i].Key[2], act[i].Key[3], act[i].Value[0], act[i].Value[1], act[i].Value[2], act[i].Value[3])
 			}
 			//n. 回收表
 			err = ta.GCTable(ctx)
