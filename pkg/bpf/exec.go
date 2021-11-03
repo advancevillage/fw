@@ -131,6 +131,7 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 		buf    []byte
 		err    error
 	)
+	fmt.Println(cmd.String())
 	stdOut, err = cmd.StdoutPipe()
 	if err != nil {
 		return err

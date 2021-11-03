@@ -14,7 +14,7 @@ var testTable = map[string]struct {
 	maxEntries int
 }{
 	"case1": {
-		file:       "pin-1",
+		file:       "nikjkl",
 		tYpe:       "hash",
 		keySize:    4,
 		valueSize:  4,

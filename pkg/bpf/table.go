@@ -56,13 +56,13 @@ func (t *table) CreateTable(ctx context.Context) error {
 		withCreateMapCmd(t.file, t.file, t.tYpe, t.keySize, t.valueSize, t.maxEntries),
 	)
 	var r = make(map[string]interface{})
-	var errs = new(bpfErrs)
-	var err = ebpf.run(ctx, r, errs)
+	var errs = new(bpfErr)
+	var err = ebpf.run(ctx, &r, errs)
 	if err != nil {
 		return err
 	}
-	for k, v := range *errs {
-		err = fmt.Errorf("%d: %s\n", k, v.Err)
+	if len(errs.Err) > 0 {
+		err = errors.New(errs.Err)
 	}
 	return err
 }
