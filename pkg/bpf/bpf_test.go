@@ -2,6 +2,7 @@ package bpf
 
 import (
 	"context"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -39,13 +40,28 @@ func Test_table(t *testing.T) {
 				t.Fatal("create table fail", err)
 				return
 			}
-
-			//n. 回收表
-			err = ta.GCTable(ctx)
-			if err != nil {
-				t.Fatal("gc table fail", err)
-				return
+			//2. 准备数据
+			var data = make([]*KV, 0, p.maxEntries)
+			for i := 0; i < p.maxEntries; i++ {
+				data = append(data, &KV{
+					Key:   []byte{byte(rand.Intn(256)), byte(rand.Intn(256)), byte(rand.Intn(256)), byte(rand.Intn(256))},
+					Value: []byte{byte(rand.Intn(256)), byte(rand.Intn(256)), byte(rand.Intn(256)), byte(rand.Intn(256))},
+				})
 			}
+			//3. 更新数据
+			for _, v := range data {
+				err = ta.UpdateTable(ctx, v.Key, v.Value)
+				if err != nil {
+					t.Fatal(err)
+					return
+				}
+			}
+			//n. 回收表
+			//err = ta.GCTable(ctx)
+			//if err != nil {
+			//	t.Fatal("gc table fail", err)
+			//	return
+			//}
 		}
 		t.Run(n, f)
 	}
