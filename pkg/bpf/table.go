@@ -55,7 +55,7 @@ func (t *table) CreateTable(ctx context.Context) error {
 		withMap(),
 		withCreateMapCmd(t.file, t.file, t.tYpe, t.keySize, t.valueSize, t.maxEntries),
 	)
-	var r = make(map[string]interface{})
+	var r string
 	var errs = new(bpfErr)
 	var err = ebpf.run(ctx, &r, errs)
 	if err != nil {
@@ -80,7 +80,7 @@ func (t *table) UpdateTable(ctx context.Context, key []byte, value []byte) error
 		withMap(),
 		withUpdateMapCmd(t.file, key, value, "any"),
 	)
-	var r = make(map[string]interface{})
+	var r string
 	var errs = new(bpfErr)
 	var err = ebpf.run(ctx, &r, errs)
 	if err != nil {
@@ -107,6 +107,15 @@ func (t *table) QueryTable(ctx context.Context) ([]*KV, error) {
 
 	var r = new(kvList)
 	var errs = new(bpfErr)
+	//eg: 正常
+	//
+	// [{"key":["0x12","0x34","0x56","0x78"],"value":["0x87","0x65","0x43","0x21"]}]
+	//
+	//eg:  不存在
+	//
+	// {"error":"bpf obj get (/sys/fs/bpf/nikjklkdjf): No such file or directory"}
+	//
+	//eg:
 
 	var err = ebpf.run(ctx, r, errs)
 	if err != nil {
@@ -116,10 +125,6 @@ func (t *table) QueryTable(ctx context.Context) ([]*KV, error) {
 	if len(errs.Err) > 0 {
 		return nil, errors.New(errs.Err)
 	}
-
-	//eg:
-	// [{"key":["0x12","0x34","0x56","0x78"],"value":["0x87","0x65","0x43","0x21"]}]
-	//
 	var rr = make([]*KV, 0, len(*r))
 	for i := range *r {
 		var v = &KV{

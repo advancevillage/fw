@@ -145,21 +145,19 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 	if err != nil {
 		return err
 	}
-	//注意:  bpftool map 增加   删除   更新   查询
-	//成功:				 null   null    null   array
-	//失败:              object object  object array
-	//示例:
-	//
-	if json.Valid(buf) {
-		err = json.Unmarshal(buf, reply)
-		if err != nil {
-			return err
-		}
+
+	switch {
+	case strings.Contains(string(buf), "error"):
 		err = json.Unmarshal(buf, errs)
-		if err != nil {
-			return err
-		}
+	case json.Valid(buf):
+		err = json.Unmarshal(buf, reply)
+	default:
+		reply = string(buf)
 	}
+	if err != nil {
+		return err
+	}
+
 	err = cmd.Wait()
 	if err != nil {
 		return err
