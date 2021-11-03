@@ -78,3 +78,42 @@ func Test_table(t *testing.T) {
 		t.Run(n, f)
 	}
 }
+
+var testHex = map[string]struct {
+	h byte
+	s string
+}{
+	"case1": {
+		h: 0x21,
+		s: "0x21",
+	},
+	"case2": {
+		h: 0x01,
+		s: "0x01",
+	},
+	"case3": {
+		h: 0xf,
+		s: "0xf",
+	},
+	"case4": {
+		h: 0x0f,
+		s: "0x0f",
+	},
+	"case5": {
+		h: 0x00,
+		s: "0x00",
+	},
+}
+
+func Test_hex(t *testing.T) {
+	var ta = &table{}
+	for n, p := range testHex {
+		f := func(t *testing.T) {
+			var hh = ta.hex(p.s)
+			if hh != p.h {
+				t.Fatal(hh, "<>", p.h)
+			}
+		}
+		t.Run(n, f)
+	}
+}

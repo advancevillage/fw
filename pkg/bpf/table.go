@@ -172,9 +172,38 @@ func (t *table) GCTable(ctx context.Context) error {
 
 func (t *table) hex(s string) byte {
 	var v = byte(0)
+	var vv = byte(0)
 	//0x12 0xa 12
 	for i := len(s) - 1; i >= 0 && s[i] != 'x'; i-- {
-		v += byte(s[i]-'0') * byte((len(s) - 1 - i)) * 16
+		switch s[i] {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			vv = s[i] - '0'
+		case 'a', 'A':
+			vv = 10
+		case 'b', 'B':
+			vv = 11
+		case 'c', 'C':
+			vv = 12
+		case 'd', 'D':
+			vv = 13
+		case 'e', 'E':
+			vv = 14
+		case 'f', 'F':
+			vv = 15
+		}
+		v += vv * t.pow(0x10, len(s)-1-i)
 	}
 	return v
+}
+
+func (t *table) pow(x, n int) byte {
+	switch {
+	case n <= 0:
+		return 0x01
+	default:
+		for i := 1; i < n; i++ {
+			x *= x
+		}
+		return byte(x)
+	}
 }
