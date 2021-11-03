@@ -8,6 +8,11 @@ import (
 )
 
 type ITable interface {
+	GCTable(ctx context.Context) error
+	CreateTable(ctx context.Context) error
+	QueryTable(ctx context.Context) ([]*KV, error)
+	DeleteTable(ctx context.Context, key []byte) error
+	UpdateTable(ctx context.Context, key []byte, value []byte) error
 }
 
 type KV struct {

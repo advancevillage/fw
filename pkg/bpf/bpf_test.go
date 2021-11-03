@@ -2,105 +2,51 @@ package bpf
 
 import (
 	"context"
-	"encoding/binary"
 	"testing"
+	"time"
 )
 
-var testDumpMap = map[string]struct {
-	name string
-}{
-	"case1": {},
-}
-
-func Test_run_map(t *testing.T) {
-	var cmd = "show"
-	var b = newBpfTool(withExec(), withJSON(), withMap(), withCmd(cmd))
-	for n := range testDumpMap {
-		f := func(t *testing.T) {
-			var bms = new(bpfMaps)
-			var bes = new(bpfErrs)
-			var err = b.run(context.TODO(), bms, bes)
-			t.Log(*bms)
-			t.Log(*bes)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-		}
-		t.Run(n, f)
-	}
-
-}
-
-var testOpMap = map[string]struct {
-	name      string
-	file      string
-	tYpe      string
-	keySize   int
-	valueSize int
-	max       int
+var testTable = map[string]struct {
+	file       string
+	tYpe       string
+	keySize    int
+	valueSize  int
+	maxEntries int
 }{
 	"case1": {
-		name:      "xxx",
-		file:      "abc",
-		tYpe:      "hash",
-		keySize:   4,
-		valueSize: 4,
-		max:       64,
+		file:       "pin-1",
+		tYpe:       "hash",
+		keySize:    4,
+		valueSize:  4,
+		maxEntries: 64,
 	},
 }
 
-func Test_op_map(t *testing.T) {
-	for n, p := range testOpMap {
-		var b = newBpfTool(withExec(), withJSON(), withMap(), withCreateMapCmd(p.name, p.file, p.tYpe, p.keySize, p.valueSize, p.max))
+func Test_table(t *testing.T) {
+	for n, p := range testTable {
 		f := func(t *testing.T) {
-			var bms = new(bpfMap)
-			var bes = new(bpfErr)
-			var err = b.run(context.TODO(), bms, bes)
-			t.Log("create", bms, err)
-			t.Log("create", bes, err)
+			var ta, err = NewTableClient(p.file, p.tYpe, p.keySize, p.valueSize, p.maxEntries)
 			if err != nil {
 				t.Fatal(err)
+				return
+			}
+			//1. 创建表
+			var ctx, cancel = context.WithTimeout(context.Background(), time.Second*20)
+			defer cancel()
+
+			err = ta.CreateTable(ctx)
+			if err != nil {
+				t.Fatal("create table fail", err)
 				return
 			}
 
-			var (
-				key   = make([]byte, 4)
-				value = make([]byte, 4)
-			)
-			binary.BigEndian.PutUint32(key, 0x12345678)
-			binary.BigEndian.PutUint32(value, 0x87654321)
-			withUpdateMapCmd(p.file, key, value, UpdateFlagAny)(b)
-			err = b.run(context.TODO(), bms, bes)
-			t.Log("update", bms, err)
-			t.Log("update", bes, err)
+			//n. 回收表
+			err = ta.GCTable(ctx)
 			if err != nil {
-				t.Fatal(err)
-				return
-			}
-
-			withDumpMapCmd(p.file)(b)
-			type item struct {
-				Key   []string `json:"key"`
-				Value []string `json:"value"`
-			}
-			type items []item
-			var entries = new(items)
-			var errs = new(bpfErrs)
-			err = b.run(context.TODO(), entries, errs)
-			t.Log("dump", entries, err)
-			t.Log("dump", errs, err)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			err = b.unlink(context.TODO(), p.file)
-			if err != nil {
-				t.Fatal(err)
+				t.Fatal("gc table fail", err)
 				return
 			}
 		}
 		t.Run(n, f)
 	}
-
 }
