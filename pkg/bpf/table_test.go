@@ -1,6 +1,7 @@
 package bpf
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/rand"
@@ -65,8 +66,40 @@ func Test_table(t *testing.T) {
 			}
 			//5. 输出
 			for i := 0; i < p.maxEntries; i++ {
-				fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", i, data[i].Key[0], data[i].Key[1], data[i].Key[2], data[i].Key[3], data[i].Value[0], data[i].Value[1], data[i].Value[2], data[i].Value[3])
-				fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", i, act[i].Key[0], act[i].Key[1], act[i].Key[2], act[i].Key[3], act[i].Value[0], act[i].Value[1], act[i].Value[2], act[i].Value[3])
+				var v = data[i]
+				var j = 0
+				for ; j < p.maxEntries; j++ {
+					var vv = act[j]
+					if bytes.Equal(v.Key, vv.Key) && bytes.Equal(v.Value, vv.Value) {
+						fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", i, data[i].Key[0], data[i].Key[1], data[i].Key[2], data[i].Key[3], data[i].Value[0], data[i].Value[1], data[i].Value[2], data[i].Value[3])
+						fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", j, act[j].Key[0], act[j].Key[1], act[j].Key[2], act[j].Key[3], act[j].Value[0], act[j].Value[1], act[j].Value[2], act[j].Value[3])
+						break
+					} else {
+						continue
+					}
+				}
+				if j >= p.maxEntries {
+					t.Fatal(data[i], "don't found")
+					return
+				}
+			}
+			for j := 0; j < p.maxEntries; j++ {
+				var v = act[j]
+				var i = 0
+				for ; i < p.maxEntries; i++ {
+					var vv = data[i]
+					if bytes.Equal(v.Key, vv.Key) && bytes.Equal(v.Value, vv.Value) {
+						fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", i, data[i].Key[0], data[i].Key[1], data[i].Key[2], data[i].Key[3], data[i].Value[0], data[i].Value[1], data[i].Value[2], data[i].Value[3])
+						fmt.Printf("%d key %x %x %x %x value %x %x %x %x\n", j, act[j].Key[0], act[j].Key[1], act[j].Key[2], act[j].Key[3], act[j].Value[0], act[j].Value[1], act[j].Value[2], act[j].Value[3])
+						break
+					} else {
+						continue
+					}
+				}
+				if i >= p.maxEntries {
+					t.Fatal(act[j], "don't found")
+					return
+				}
 			}
 			//n. 回收表
 			err = ta.GCTable(ctx)
