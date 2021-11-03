@@ -63,13 +63,16 @@ func Test_table(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
-			fmt.Println(act)
+			//5. 输出
+			for i := 0; i < p.maxEntries; i++ {
+				fmt.Printf("%v %v\n", data[i], act[i])
+			}
 			//n. 回收表
-			//err = ta.GCTable(ctx)
-			//if err != nil {
-			//	t.Fatal("gc table fail", err)
-			//	return
-			//}
+			err = ta.GCTable(ctx)
+			if err != nil {
+				t.Fatal("gc table fail", err)
+				return
+			}
 		}
 		t.Run(n, f)
 	}
