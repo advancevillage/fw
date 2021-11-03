@@ -15,18 +15,20 @@ var testTable = map[string]struct {
 	valueSize  int
 	maxEntries int
 }{
+	//普通普通类型
 	"case1": {
-		file:       "nikjkl",
 		tYpe:       "hash",
 		keySize:    4,
 		valueSize:  4,
 		maxEntries: 64,
 	},
+	//结构体
 }
 
 func Test_table(t *testing.T) {
 	for n, p := range testTable {
 		f := func(t *testing.T) {
+			p.file = randStr(8)
 			var ta, err = NewTableClient(p.file, p.tYpe, p.keySize, p.valueSize, p.maxEntries)
 			if err != nil {
 				t.Fatal(err)
@@ -193,4 +195,15 @@ func Test_hex(t *testing.T) {
 		}
 		t.Run(n, f)
 	}
+}
+
+func randStr(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[rand.Intn(len(bytes))])
+	}
+	return string(result)
 }
