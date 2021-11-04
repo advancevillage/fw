@@ -1,0 +1,16 @@
+syntax="proto3";
+
+package fw;
+
+option go_package="./proto";
+
+//protoc -I proto --go_out=./proto/ --go_opt=paths=source_relative proto/fw.proto
+
+message rule {
+    uint32 protocol = 1;
+    uint32 srcIp    = 2;
+    uint32 dstIp    = 3;
+    uint32 srcPort  = 4;
+    uint32 dstPort  = 5;
+    uint32 action   = 6;
+}
