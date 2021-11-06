@@ -58,10 +58,10 @@ func withCmd(cmd string) bpftoolOption {
 	}
 }
 
-func withCreateMapCmd(name string, file string, tYpe string, keySize int, valueSize int, entries int) bpftoolOption {
+func withCreateMapCmd(name string, file string, tYpe string, keySize int, valueSize int, entries int, flags int) bpftoolOption {
 	//mount bpffs /sys/fs/bpf -t bpf
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
-	var cmd = fmt.Sprintf("create %s type %s key %d value %d entries %d name %s", file, tYpe, keySize, valueSize, entries, name)
+	var cmd = fmt.Sprintf("create %s type %s key %d value %d entries %d name %s flags %d", file, tYpe, keySize, valueSize, entries, name, flags)
 	return withCmd(cmd)
 }
 

@@ -20,25 +20,46 @@ type KV struct {
 	Value []byte `json:"Value"`
 }
 
+const (
+	bpf_f_prealloc    = 0
+	bpf_f_no_prealloc = 1
+)
+
 type table struct {
 	tYpe       string
 	file       string
 	keySize    int
 	valueSize  int
 	maxEntries int
+	flags      int
 }
 
 func NewTableClient(file string, tYpe string, keySize int, valueSize int, maxEntries int) (ITable, error) {
 	//1. 预设类型对应的Flags
+	var t = &table{}
 	tYpe = strings.ToLower(tYpe)
 	switch tYpe {
 	case "hash":
+		t.flags = bpf_f_no_prealloc
+		if keySize < 1 || valueSize < 1 {
+			return nil, fmt.Errorf("keySize or valueSize param are invalid")
+		}
 	case "array":
-	case "lru_hash":
+		if keySize != 4 {
+			return nil, fmt.Errorf("keySize param is invalid")
+		}
+		t.flags = bpf_f_prealloc
+	case "lpm_trie":
+		t.flags = bpf_f_no_prealloc
+		if keySize < 5 || keySize > 260 {
+			return nil, fmt.Errorf("keySize param is invalid")
+		}
+		if valueSize < 1 || valueSize > (65535-260) {
+			return nil, fmt.Errorf("valueSize param is invalid")
+		}
 	default:
 		return nil, fmt.Errorf("don't support %s map type", tYpe)
 	}
-	var t = &table{}
 	t.file = file
 	t.tYpe = tYpe
 	t.keySize = keySize
@@ -53,7 +74,7 @@ func (t *table) CreateTable(ctx context.Context) error {
 		withExec(),
 		withJSON(),
 		withMap(),
-		withCreateMapCmd(t.file, t.file, t.tYpe, t.keySize, t.valueSize, t.maxEntries),
+		withCreateMapCmd(t.file, t.file, t.tYpe, t.keySize, t.valueSize, t.maxEntries, t.flags),
 	)
 	var r string
 	var errs = new(bpfErr)
