@@ -2,6 +2,7 @@ package rule
 
 import (
 	"errors"
+	"fmt"
 	"net"
 )
 
@@ -46,6 +47,9 @@ func newPortMask(min, max int) ([]*PortMask, error) {
 }
 
 func newIpMask(s string) (*IpMask, error) {
+	if net.ParseIP(s) != nil {
+		s = fmt.Sprintf("%s/%d", s, 32)
+	}
 	var ip, ipnet, err = net.ParseCIDR(s)
 	if err != nil {
 		return nil, err
@@ -60,4 +64,24 @@ func newIpMask(s string) (*IpMask, error) {
 
 	r.Ip = uint32(ip[0]&0x000000ff)<<24 | uint32(ip[1]&0x000000ff)<<16 | uint32(ip[2]&0x000000ff)<<8 | uint32(ip[3]&0x000000ff)
 	return r, nil
+}
+
+const (
+	defaultBitmapLength = 256
+)
+
+type Bitmap [defaultBitmapLength]byte
+
+func (b *Bitmap) Set(pos uint16) {
+	if pos >= defaultBitmapLength*0x8 {
+		return
+	}
+	b[pos/0x8] = b[pos/0x8] | (0x1 << (0x7 - pos%0x8))
+}
+
+func (b *Bitmap) Unset(pos uint16) {
+	if pos >= defaultBitmapLength*0x8 {
+		return
+	}
+	b[pos/0x8] = b[pos/0x8] & ^(0x1 << (0x7 - pos%0x8))
 }

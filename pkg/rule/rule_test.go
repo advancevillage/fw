@@ -1,10 +1,16 @@
 package rule
 
 import (
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 var testPortMask = map[string]struct {
 	min int
@@ -29,6 +35,10 @@ var testPortMask = map[string]struct {
 	"case5": {
 		min: 3306,
 		max: 6379,
+	},
+	"case6": {
+		min: 1100,
+		max: 1200,
 	},
 }
 
@@ -76,16 +86,43 @@ func Test_portMask(t *testing.T) {
 }
 
 var testIpMask = map[string]struct {
-	ip string
+	ip  string
+	exp *IpMask
 }{
 	"case1": {
 		ip: "192.168.1.1/24",
+		exp: &IpMask{
+			Ip:   0xc0a80100,
+			Mask: 24,
+		},
 	},
 	"case2": {
 		ip: "192.168.1.2/0",
+		exp: &IpMask{
+			Ip:   0,
+			Mask: 0,
+		},
 	},
 	"case3": {
 		ip: "0.0.0.0/32",
+		exp: &IpMask{
+			Ip:   0,
+			Mask: 32,
+		},
+	},
+	"case4": {
+		ip: "192.168.1.1",
+		exp: &IpMask{
+			Ip:   0xc0a80101,
+			Mask: 32,
+		},
+	},
+	"case5": {
+		ip: "0.0.0.0",
+		exp: &IpMask{
+			Ip:   0,
+			Mask: 32,
+		},
 	},
 }
 
@@ -97,8 +134,112 @@ func Test_ipMask(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
-			t.Log(a)
+			assert.Equal(t, a, p.exp)
 		}
 		t.Run(n, f)
 	}
+}
+
+var testBitmap = map[string]struct {
+	start uint16
+	end   uint16
+	exp   Bitmap
+}{
+	"case1": {
+		start: uint16(rand.Intn(100)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case2": {
+		start: uint16(rand.Intn(200)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case3": {
+		start: uint16(rand.Intn(300)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case4": {
+		start: uint16(rand.Intn(400)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case5": {
+		start: uint16(rand.Intn(500)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case6": {
+		start: uint16(rand.Intn(600)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case7": {
+		start: uint16(rand.Intn(700)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case8": {
+		start: uint16(rand.Intn(800)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case9": {
+		start: uint16(rand.Intn(900)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case10": {
+		start: uint16(rand.Intn(1000)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case11": {
+		start: uint16(rand.Intn(1100)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case12": {
+		start: uint16(rand.Intn(10)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case13": {
+		start: uint16(rand.Intn(20)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case14": {
+		start: uint16(rand.Intn(30)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case15": {
+		start: uint16(rand.Intn(40)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case16": {
+		start: uint16(rand.Intn(50)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case17": {
+		start: uint16(rand.Intn(60)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case18": {
+		start: uint16(rand.Intn(70)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case19": {
+		start: uint16(rand.Intn(80)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+	"case20": {
+		start: uint16(rand.Intn(90)),
+		end:   uint16(rand.Intn(1024) + 1024),
+	},
+}
+
+func Test_bitmap(t *testing.T) {
+	for n, p := range testBitmap {
+		f := func(t *testing.T) {
+			var bm Bitmap
+			for i := p.start; i < p.end; i++ {
+				bm.Set(i)
+			}
+			for i := p.start; i < p.end; i++ {
+				bm.Unset(i)
+			}
+			assert.Equal(t, bm, p.exp)
+		}
+		t.Run(n, f)
+	}
+
 }

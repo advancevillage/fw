@@ -6,11 +6,39 @@ option go_package="./proto";
 
 //protoc -I proto --go_out=./proto/ --go_opt=paths=source_relative proto/fw.proto
 
-message rule {
-    uint32 protocol = 1;
-    uint32 srcIp    = 2;
-    uint32 dstIp    = 3;
-    uint32 srcPort  = 4;
-    uint32 dstPort  = 5;
-    uint32 action   = 6;
+message bpfFwRule {
+    uint32 protocol     = 1;
+    uint32 srcIp        = 2;
+    uint32 srcIpMask    = 3;
+    uint32 srcPort      = 4;
+    uint32 srcPortMask  = 5;
+    uint32 dstIp        = 6;
+    uint32 dstIpMask    = 7;
+    uint32 dstPort      = 8;
+    uint32 dstPortMask  = 9;
+    uint32 action       = 10;
+}
+
+
+message FwRule {
+    //eg: TCP UDP ICMP GRE
+    string protocol     = 1;
+    //eg: 
+    //11.11.11.11
+    //11.11.11.11/24  
+    //0.0.0.0/0
+    //0.0.0.0/32
+    string srcIp        = 2;
+    string dstIp        = 3;
+    //eg:
+    //1-65535
+    //22
+    //3389
+    //11-1111
+    string srcPort      = 4;
+    string dstPort      = 5; 
+    //eg:
+    //accept
+    //drop
+    string action       = 6;
 }
