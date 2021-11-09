@@ -28,6 +28,14 @@ var writeTestData = map[string]struct {
 				DstPort:  "22",
 				Action:   "accept",
 			},
+			{
+				Protocol: "udp",
+				SrcIp:    "114.114.114.114/24",
+				SrcPort:  "1-65535",
+				DstIp:    "8.8.8.8/32",
+				DstPort:  "22-222",
+				Action:   "accept",
+			},
 		},
 	},
 }
