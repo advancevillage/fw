@@ -2,11 +2,16 @@ package fw
 
 import (
 	"context"
+	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/advancevillage/fw/proto"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 var writeTestData = map[string]struct {
 	name    string
@@ -14,7 +19,7 @@ var writeTestData = map[string]struct {
 	rules   []*proto.FwRule
 }{
 	"case1": {
-		name:    "UpDown",
+		name:    randStr(8),
 		version: 0,
 		rules: []*proto.FwRule{
 			{
@@ -42,8 +47,24 @@ func Test_write(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
+			err = s.Clean(ctx, p.name, p.version)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
 		}
 		t.Run(n, f)
 	}
 
+}
+
+func randStr(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[rand.Intn(len(bytes))])
+	}
+	return string(result)
 }

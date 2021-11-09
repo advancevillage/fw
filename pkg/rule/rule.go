@@ -77,20 +77,20 @@ func newIpMask(s string) (*IpMask, error) {
 }
 
 const (
-	defaultBitmapLength = 256
+	BitmapLength = 128
 )
 
-type Bitmap [defaultBitmapLength]byte
+type Bitmap [BitmapLength]byte
 
 func (b *Bitmap) Set(pos uint16) {
-	if pos >= defaultBitmapLength*0x8 {
+	if pos >= BitmapLength*0x8 {
 		return
 	}
 	b[pos/0x8] = b[pos/0x8] | (0x1 << (0x7 - pos%0x8))
 }
 
 func (b *Bitmap) Unset(pos uint16) {
-	if pos >= defaultBitmapLength*0x8 {
+	if pos >= BitmapLength*0x8 {
 		return
 	}
 	b[pos/0x8] = b[pos/0x8] & ^(0x1 << (0x7 - pos%0x8))
@@ -98,7 +98,7 @@ func (b *Bitmap) Unset(pos uint16) {
 
 func newEmptyBitmap() *Bitmap {
 	var b = new(Bitmap)
-	for i := uint16(0); i < defaultBitmapLength*8; i++ {
+	for i := uint16(0); i < BitmapLength*8; i++ {
 		b.Unset(i)
 	}
 	return b
@@ -106,7 +106,7 @@ func newEmptyBitmap() *Bitmap {
 
 func newFullBitmap() *Bitmap {
 	var b = new(Bitmap)
-	for i := uint16(0); i < defaultBitmapLength*8; i++ {
+	for i := uint16(0); i < BitmapLength*8; i++ {
 		b.Set(i)
 	}
 	return b

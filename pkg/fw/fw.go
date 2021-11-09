@@ -28,27 +28,27 @@ type fwMgr struct {
 }
 
 func NewFwMgr() (IFwMgr, error) {
-	protoTable, err := bpf.NewTableClient("proto", "lpm_trie", 5, 256, 2048)
+	protoTable, err := bpf.NewTableClient("proto", "lpm_trie", 5, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	srcIpTable, err := bpf.NewTableClient("srcIp", "lpm_trie", 8, 256, 2048)
+	srcIpTable, err := bpf.NewTableClient("srcIp", "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	srcPortTable, err := bpf.NewTableClient("srcPort", "lpm_trie", 6, 256, 2048)
+	srcPortTable, err := bpf.NewTableClient("srcPort", "lpm_trie", 6, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	dstIpTable, err := bpf.NewTableClient("dstIp", "lpm_trie", 8, 256, 2048)
+	dstIpTable, err := bpf.NewTableClient("dstIp", "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	dstPortTable, err := bpf.NewTableClient("dstPort", "lpm_trie", 6, 256, 2048)
+	dstPortTable, err := bpf.NewTableClient("dstPort", "lpm_trie", 6, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	ruleTable, err := bpf.NewTableClient("rules", "array", 4, 64, 2048)
+	ruleTable, err := bpf.NewTableClient("rules", "array", 4, 48, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
@@ -76,12 +76,12 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 		return errors.New("parse firewall rule fail")
 	}
 	//2. 设置防火墙名称
-	mgr.protoTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
+	mgr.protoTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "Proto"))
+	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "SrcIp"))
+	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "SrcPort"))
+	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "DstIp"))
+	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "DstPort"))
+	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "Rule"))
 	//3. 写入map
 	err = mgr.writeRuleTable(ctx, lbvs.Rules)
 	if err != nil {
@@ -195,7 +195,7 @@ func (mgr *fwMgr) writeRuleTable(ctx context.Context, table []*proto.BpfFwRule) 
 		if err != nil {
 			return err
 		}
-		var m = make([]byte, 64)
+		var m = make([]byte, 48)
 		mgr.encode(m, b)
 		err = mgr.ruleTable.UpdateTable(ctx, []byte{uint8(k), uint8(k >> 8), uint8(k >> 16), uint8(k >> 24)}, m)
 		if err != nil {
@@ -216,8 +216,8 @@ func (mgr *fwMgr) encode(m []byte, s []byte) {
 	// big endian
 	m[0] = 0x10 | 0x04
 	m[1] = 0x00
-	m[2] = 0xff & uint8((len(s)+4)>>8)
-	m[3] = 0xff & uint8((len(s) + 4))
+	m[2] = 0xff & uint8((len(s) + 4))
+	m[3] = 0xff & uint8((len(s)+4)>>8)
 	copy(m[4:], s)
 }
 
