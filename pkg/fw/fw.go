@@ -8,6 +8,7 @@ import (
 	"github.com/advancevillage/fw/pkg/bpf"
 	"github.com/advancevillage/fw/pkg/rule"
 	"github.com/advancevillage/fw/proto"
+	pb "github.com/golang/protobuf/proto"
 )
 
 type IFwMgr interface {
@@ -82,7 +83,27 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
 	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
 	//3. 写入map
+	err = mgr.writeRuleTable(ctx, lbvs.Rules)
+	if err != nil {
+		return err
+	}
+	err = mgr.writeSrcIpTable(ctx, lbvs.SrcIp)
+	if err != nil {
+		return err
+	}
+	err = mgr.writeDstIpTable(ctx, lbvs.DstIp)
+	if err != nil {
+		return err
+	}
 	err = mgr.writeProtoTable(ctx, lbvs.Protocol)
+	if err != nil {
+		return err
+	}
+	err = mgr.writeSrcPortTable(ctx, lbvs.SrcPort)
+	if err != nil {
+		return err
+	}
+	err = mgr.writeDstPortTable(ctx, lbvs.DstPort)
 	if err != nil {
 		return err
 	}
@@ -102,6 +123,102 @@ func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[uint8]*rule.Bit
 		}
 	}
 	return nil
+}
+
+func (mgr *fwMgr) writeSrcIpTable(ctx context.Context, table map[*rule.IpMask]*rule.Bitmap) error {
+	var err = mgr.srcIpTable.CreateTable(ctx)
+	if err != nil {
+		return err
+	}
+	for k, v := range table {
+		var vv = (*v)[:]
+		err = mgr.srcIpTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Ip >> 24), uint8(k.Ip >> 16), uint8(k.Ip >> 8), uint8(k.Ip)}, vv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mgr *fwMgr) writeSrcPortTable(ctx context.Context, table map[*rule.PortMask]*rule.Bitmap) error {
+	var err = mgr.srcPortTable.CreateTable(ctx)
+	if err != nil {
+		return err
+	}
+	for k, v := range table {
+		var vv = (*v)[:]
+		err = mgr.srcPortTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Port >> 8), uint8(k.Port)}, vv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mgr *fwMgr) writeDstIpTable(ctx context.Context, table map[*rule.IpMask]*rule.Bitmap) error {
+	var err = mgr.dstIpTable.CreateTable(ctx)
+	if err != nil {
+		return err
+	}
+	for k, v := range table {
+		var vv = (*v)[:]
+		err = mgr.dstIpTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Ip >> 24), uint8(k.Ip >> 16), uint8(k.Ip >> 8), uint8(k.Ip)}, vv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mgr *fwMgr) writeDstPortTable(ctx context.Context, table map[*rule.PortMask]*rule.Bitmap) error {
+	var err = mgr.dstPortTable.CreateTable(ctx)
+	if err != nil {
+		return err
+	}
+	for k, v := range table {
+		var vv = (*v)[:]
+		err = mgr.dstPortTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Port >> 8), uint8(k.Port)}, vv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mgr *fwMgr) writeRuleTable(ctx context.Context, table []*proto.BpfFwRule) error {
+	var err = mgr.ruleTable.CreateTable(ctx)
+	if err != nil {
+		return err
+	}
+	for k, v := range table {
+		var b, err = pb.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var m = make([]byte, 64)
+		mgr.encode(m, b)
+		err = mgr.ruleTable.UpdateTable(ctx, []byte{uint8(k), uint8(k >> 8), uint8(k >> 16), uint8(k >> 24)}, m)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mgr *fwMgr) encode(m []byte, s []byte) {
+	//protocol: 4Byte
+	//  0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+	// |_______|_______|____________________|
+	//    ver     ihl		   tos
+	//  0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+	// |____________________________________|
+	//		     total length
+	// big endian
+	m[0] = 0x10 | 0x04
+	m[1] = 0x00
+	m[2] = 0xff & uint8((len(s)+4)>>8)
+	m[3] = 0xff & uint8((len(s) + 4))
+	copy(m[4:], s)
 }
 
 func (mgr *fwMgr) Clean(ctx context.Context, name string, version int) error {
