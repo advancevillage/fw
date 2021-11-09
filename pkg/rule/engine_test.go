@@ -32,6 +32,24 @@ var testEngine = map[string]struct {
 			},
 		},
 	},
+	"case3": {
+		rules: []*proto.FwRule{
+			{
+				Protocol: "tcp",
+				DstIp:    "110.11.11.24/32",
+				DstPort:  "22",
+				Action:   "accept",
+			},
+			{
+				Protocol: "udp",
+				SrcIp:    "114.114.114.114/24",
+				SrcPort:  "1-65535",
+				DstIp:    "8.8.8.8/32",
+				DstPort:  "22-222",
+				Action:   "accept",
+			},
+		},
+	},
 }
 
 func Test_engine(t *testing.T) {
@@ -43,11 +61,11 @@ func Test_engine(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
-			for _, v := range act {
-				fmt.Printf("%d %d %d %d %d %d %d %d %d %d\n", v.Protocol, v.SrcIp, v.SrcIpMask, v.SrcPort, v.SrcPortMask, v.DstIp, v.DstIpMask, v.DstPort, v.DstPortMask, v.Action)
+			for i, v := range act {
+				fmt.Printf("#%d %d %d %d %d %d %d %d %d %d %d\n", i, v.Protocol, v.SrcIp, v.SrcIpMask, v.SrcPort, v.SrcPortMask, v.DstIp, v.DstIpMask, v.DstPort, v.DstPortMask, v.Action)
 			}
 			var lbvs = s.analyze(act)
-			fmt.Println(*lbvs)
+			t.Log(lbvs)
 		}
 		t.Run(n, f)
 

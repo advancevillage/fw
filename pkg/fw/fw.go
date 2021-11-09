@@ -110,13 +110,16 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	return nil
 }
 
-func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[uint8]*rule.Bitmap) error {
+func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[uint8]rule.IBitmap) error {
 	var err = mgr.protoTable.CreateTable(ctx)
 	if err != nil {
 		return err
 	}
 	for k, v := range table {
-		var vv = (*v)[:]
+		if v == nil {
+			continue
+		}
+		var vv = v.Bytes()
 		err = mgr.protoTable.UpdateTable(ctx, []byte{0x08, 0x00, 0x00, 0x00, k}, vv)
 		if err != nil {
 			return err
@@ -125,13 +128,17 @@ func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[uint8]*rule.Bit
 	return nil
 }
 
-func (mgr *fwMgr) writeSrcIpTable(ctx context.Context, table map[*rule.IpMask]*rule.Bitmap) error {
+func (mgr *fwMgr) writeSrcIpTable(ctx context.Context, table map[string]rule.IBitmap) error {
 	var err = mgr.srcIpTable.CreateTable(ctx)
 	if err != nil {
 		return err
 	}
-	for k, v := range table {
-		var vv = (*v)[:]
+	for key, v := range table {
+		var k = rule.IpMaskDecode(key)
+		if k == nil || v == nil {
+			continue
+		}
+		var vv = v.Bytes()
 		err = mgr.srcIpTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Ip >> 24), uint8(k.Ip >> 16), uint8(k.Ip >> 8), uint8(k.Ip)}, vv)
 		if err != nil {
 			return err
@@ -140,13 +147,17 @@ func (mgr *fwMgr) writeSrcIpTable(ctx context.Context, table map[*rule.IpMask]*r
 	return nil
 }
 
-func (mgr *fwMgr) writeSrcPortTable(ctx context.Context, table map[*rule.PortMask]*rule.Bitmap) error {
+func (mgr *fwMgr) writeSrcPortTable(ctx context.Context, table map[string]rule.IBitmap) error {
 	var err = mgr.srcPortTable.CreateTable(ctx)
 	if err != nil {
 		return err
 	}
-	for k, v := range table {
-		var vv = (*v)[:]
+	for key, v := range table {
+		var k = rule.PortMaskDecode(key)
+		if k == nil || v == nil {
+			continue
+		}
+		var vv = v.Bytes()
 		err = mgr.srcPortTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Port >> 8), uint8(k.Port)}, vv)
 		if err != nil {
 			return err
@@ -155,13 +166,17 @@ func (mgr *fwMgr) writeSrcPortTable(ctx context.Context, table map[*rule.PortMas
 	return nil
 }
 
-func (mgr *fwMgr) writeDstIpTable(ctx context.Context, table map[*rule.IpMask]*rule.Bitmap) error {
+func (mgr *fwMgr) writeDstIpTable(ctx context.Context, table map[string]rule.IBitmap) error {
 	var err = mgr.dstIpTable.CreateTable(ctx)
 	if err != nil {
 		return err
 	}
-	for k, v := range table {
-		var vv = (*v)[:]
+	for key, v := range table {
+		var k = rule.IpMaskDecode(key)
+		if k == nil || v == nil {
+			continue
+		}
+		var vv = v.Bytes()
 		err = mgr.dstIpTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Ip >> 24), uint8(k.Ip >> 16), uint8(k.Ip >> 8), uint8(k.Ip)}, vv)
 		if err != nil {
 			return err
@@ -170,13 +185,17 @@ func (mgr *fwMgr) writeDstIpTable(ctx context.Context, table map[*rule.IpMask]*r
 	return nil
 }
 
-func (mgr *fwMgr) writeDstPortTable(ctx context.Context, table map[*rule.PortMask]*rule.Bitmap) error {
+func (mgr *fwMgr) writeDstPortTable(ctx context.Context, table map[string]rule.IBitmap) error {
 	var err = mgr.dstPortTable.CreateTable(ctx)
 	if err != nil {
 		return err
 	}
-	for k, v := range table {
-		var vv = (*v)[:]
+	for key, v := range table {
+		var k = rule.PortMaskDecode(key)
+		if k == nil || v == nil {
+			continue
+		}
+		var vv = v.Bytes()
 		err = mgr.dstPortTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, uint8(k.Port >> 8), uint8(k.Port)}, vv)
 		if err != nil {
 			return err
