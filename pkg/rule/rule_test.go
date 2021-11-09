@@ -143,7 +143,6 @@ func Test_ipMask(t *testing.T) {
 var testBitmap = map[string]struct {
 	start uint16
 	end   uint16
-	exp   Bitmap
 }{
 	"case1": {
 		start: uint16(rand.Intn(100)),
@@ -229,6 +228,7 @@ var testBitmap = map[string]struct {
 
 func Test_bitmap(t *testing.T) {
 	var bm = NewBitmap(BitmapLength)
+	var ety = newEmptyBitmap()
 	for n, p := range testBitmap {
 		f := func(t *testing.T) {
 			for i := p.start; i < p.end; i++ {
@@ -237,7 +237,7 @@ func Test_bitmap(t *testing.T) {
 			for i := p.start; i < p.end; i++ {
 				bm.Unset(i)
 			}
-			assert.Equal(t, bm, p.exp)
+			assert.Equal(t, bm, ety)
 		}
 		t.Run(n, f)
 	}

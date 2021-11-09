@@ -110,17 +110,18 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	return nil
 }
 
-func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[uint8]rule.IBitmap) error {
+func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[string]rule.IBitmap) error {
 	var err = mgr.protoTable.CreateTable(ctx)
 	if err != nil {
 		return err
 	}
-	for k, v := range table {
-		if v == nil {
+	for key, v := range table {
+		var k = rule.ProtoMaskDecode(key)
+		if v == nil || k == nil {
 			continue
 		}
 		var vv = v.Bytes()
-		err = mgr.protoTable.UpdateTable(ctx, []byte{0x08, 0x00, 0x00, 0x00, k}, vv)
+		err = mgr.protoTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, k.Proto}, vv)
 		if err != nil {
 			return err
 		}

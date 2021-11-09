@@ -17,6 +17,11 @@ type IpMask struct {
 	Mask uint8
 }
 
+type ProtoMask struct {
+	Proto uint8
+	Mask  uint8
+}
+
 func IpMaskEncode(a *IpMask) string {
 	var b = []byte{uint8(a.Ip >> 24), uint8(a.Ip >> 16), uint8(a.Ip >> 8), uint8(a.Ip), a.Mask}
 	return base64.StdEncoding.EncodeToString(b)
@@ -49,6 +54,22 @@ func PortMaskDecode(s string) *PortMask {
 	return &PortMask{
 		Port: uint16(a[0])&0x00ff<<8 | uint16(a[1])&0x00ff,
 		Mask: a[2],
+	}
+}
+
+func ProtoMaskEncode(a *ProtoMask) string {
+	var b = []byte{a.Proto, a.Mask}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func ProtoMaskDecode(s string) *ProtoMask {
+	a, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	return &ProtoMask{
+		Proto: a[0],
+		Mask:  a[1],
 	}
 }
 
@@ -122,45 +143,49 @@ type IBitmap interface {
 	Unset(pos uint16)
 }
 
-type Bitmap struct {
+type bitmap struct {
 	bit []byte
 	n   uint16
 }
 
 func NewBitmap(n uint16) IBitmap {
-	return &Bitmap{bit: make([]byte, n), n: n}
+	return &bitmap{bit: make([]byte, n), n: n}
 }
 
-func (b *Bitmap) Set(pos uint16) {
+func (b *bitmap) Set(pos uint16) {
 	if pos >= b.n*0x8 {
 		return
 	}
 	b.bit[pos/0x8] = b.bit[pos/0x8] | (0x1 << (0x7 - pos%0x8))
 }
 
-func (b *Bitmap) Unset(pos uint16) {
+func (b *bitmap) Unset(pos uint16) {
 	if pos >= b.n*0x8 {
 		return
 	}
 	b.bit[pos/0x8] = b.bit[pos/0x8] & ^(0x1 << (0x7 - pos%0x8))
 }
 
-func (b *Bitmap) Bytes() []byte {
+func (b *bitmap) Bytes() []byte {
 	return b.bit
 }
 
 func newEmptyBitmap() IBitmap {
-	var b = NewBitmap(BitmapLength)
-	for i := uint16(0); i < BitmapLength*8; i++ {
-		b.Unset(i)
+	var b = new(bitmap)
+	b.bit = make([]byte, BitmapLength)
+	b.n = BitmapLength
+	for i := uint16(0); i < BitmapLength; i++ {
+		b.bit[i] = 0x00
 	}
 	return b
 }
 
 func newFullBitmap() IBitmap {
-	var b = NewBitmap(BitmapLength)
-	for i := uint16(0); i < BitmapLength*8; i++ {
-		b.Set(i)
+	var b = new(bitmap)
+	b.bit = make([]byte, BitmapLength)
+	b.n = BitmapLength
+	for i := uint16(0); i < BitmapLength; i++ {
+		b.bit[i] = 0xff
 	}
 	return b
 }

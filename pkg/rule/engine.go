@@ -13,7 +13,7 @@ type IRuleEngine interface {
 }
 
 type LBVS struct {
-	Protocol map[uint8]IBitmap
+	Protocol map[string]IBitmap
 	SrcIp    map[string]IBitmap
 	SrcPort  map[string]IBitmap
 	DstIp    map[string]IBitmap
@@ -227,30 +227,35 @@ func (e *engine) generate(rule *proto.FwRule) ([]*proto.BpfFwRule, error) {
 func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 	var lbvs = &LBVS{}
 
-	var protocol = map[uint8]IBitmap{
-		0x00: newEmptyBitmap(),
+	var protocol = map[string]IBitmap{
+		ProtoMaskEncode(&ProtoMask{Proto: 0x00, Mask: 0x00}): newEmptyBitmap(),
 	}
 	var srcIp = map[string]IBitmap{
-		IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): newFullBitmap(),
+		IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): newEmptyBitmap(),
 	}
 	var srcPort = map[string]IBitmap{
-		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newFullBitmap(),
+		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newEmptyBitmap(),
 	}
 	var dstIp = map[string]IBitmap{
-		IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): newFullBitmap(),
+		IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): newEmptyBitmap(),
 	}
 	var dstPort = map[string]IBitmap{
-		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newFullBitmap(),
+		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newEmptyBitmap(),
 	}
 
 	for i, v := range rules {
 		//table protocol
-		if vv, ok := protocol[uint8(v.GetProtocol())]; ok {
-			vv.Set(uint16(i))
-		} else {
-			var p = newEmptyBitmap()
-			p.Set(uint16(i))
-			protocol[uint8(v.GetProtocol())] = p
+		e.addProto(protocol, uint8(v.GetProtocol()), 0x08)
+		for key, value := range protocol {
+			var mask = ProtoMaskDecode(key)
+			if mask == nil {
+				continue
+			}
+			if uint8(v.GetProtocol())&mask.Mask == mask.Proto {
+				value.Set(uint16(i))
+			} else {
+				value.Unset(uint16(i))
+			}
 		}
 		//table src ip
 		e.addIp(srcIp, v.GetSrcIp(), uint8(v.GetSrcIpMask()))
@@ -259,11 +264,9 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 			if mask == nil {
 				continue
 			}
-			//TODO: Bug
-			fmt.Printf("%v %v %p\n", srcIp, value, &value)
-			value.Set(uint16(i))
 			if v.GetSrcIp()&(0xffffffff<<(0x20-mask.Mask)) == mask.Ip {
 				value.Set(uint16(i))
+				srcIp[key].Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
 			}
@@ -283,7 +286,7 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		}
 		//table dst ip
 		e.addIp(dstIp, v.GetDstIp(), uint8(v.GetDstIpMask()))
-		for key, value := range srcIp {
+		for key, value := range dstIp {
 			var mask = IpMaskDecode(key)
 			if mask == nil {
 				continue
@@ -296,7 +299,7 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		}
 		//table dst prot
 		e.addPort(dstPort, uint16(v.GetDstPort()), uint8(v.GetDstPortMask()))
-		for key, value := range srcPort {
+		for key, value := range dstPort {
 			var mask = PortMaskDecode(key)
 			if mask == nil {
 				continue
@@ -355,4 +358,24 @@ func (e *engine) addPort(cidr map[string]IBitmap, port uint16, mask uint8) {
 	if !ok {
 		cidr[PortMaskEncode(&PortMask{Port: port, Mask: mask})] = newEmptyBitmap()
 	}
+}
+
+func (e *engine) addProto(cidr map[string]IBitmap, p uint8, mask uint8) {
+	var ok = false
+	for enc := range cidr {
+		var v = ProtoMaskDecode(enc)
+		if v == nil {
+			continue
+		}
+		if v.Proto == p && v.Mask == mask {
+			ok = true
+			break
+		} else {
+			continue
+		}
+	}
+	if !ok {
+		cidr[ProtoMaskEncode(&ProtoMask{Proto: p, Mask: mask})] = newEmptyBitmap()
+	}
+
 }
