@@ -58,6 +58,10 @@ func withCmd(cmd string) bpftoolOption {
 	}
 }
 
+func withShowMapCmd() bpftoolOption {
+	return withCmd("show")
+}
+
 func withCreateMapCmd(name string, file string, tYpe string, keySize int, valueSize int, entries int, flags int) bpftoolOption {
 	//mount bpffs /sys/fs/bpf -t bpf
 	file = fmt.Sprintf("%s/%s", BPFFS, file)

@@ -146,11 +146,21 @@ func Test_table(t *testing.T) {
 					return
 				}
 			}
-
-			//n. 回收表
+			//6. 表查询判断
+			var exist = ta.ExistTable(ctx)
+			if !exist {
+				t.Fatal(exist, "table should be exist")
+				return
+			}
+			//7. 回收表
 			err = ta.GCTable(ctx)
 			if err != nil {
 				t.Fatal("gc table fail", err)
+				return
+			}
+			exist = ta.ExistTable(ctx)
+			if exist {
+				t.Fatal(exist, "table should not be exist")
 				return
 			}
 		}

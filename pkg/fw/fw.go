@@ -76,12 +76,12 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 		return errors.New("parse firewall rule fail")
 	}
 	//2. 设置防火墙名称
-	mgr.protoTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "Proto"))
-	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "SrcIp"))
-	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "SrcPort"))
-	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "DstIp"))
-	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "DstPort"))
-	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%sV%d%s", name, version, "Rule"))
+	mgr.protoTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Proto"))
+	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcIp"))
+	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcPort"))
+	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstIp"))
+	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstPort"))
+	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Rule"))
 	//3. 写入map
 	err = mgr.writeRuleTable(ctx, lbvs.Rules)
 	if err != nil {
@@ -243,12 +243,12 @@ func (mgr *fwMgr) encode(m []byte, s []byte) {
 
 func (mgr *fwMgr) Clean(ctx context.Context, name string, version int) error {
 	//1. 设置防火墙名称
-	mgr.protoTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
-	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%sv%d", name, version))
+	mgr.protoTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Proto"))
+	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcIp"))
+	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcPort"))
+	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstIp"))
+	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstPort"))
+	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Rule"))
 
 	mgr.protoTable.GCTable(ctx)
 	mgr.srcIpTable.GCTable(ctx)

@@ -10,6 +10,7 @@ import (
 type ITable interface {
 	UpdateTableName(name string)
 	GCTable(ctx context.Context) error
+	ExistTable(ctx context.Context) bool
 	CreateTable(ctx context.Context) error
 	QueryTable(ctx context.Context) ([]*KV, error)
 	DeleteTable(ctx context.Context, key []byte) error
@@ -166,6 +167,31 @@ func (t *table) QueryTable(ctx context.Context) ([]*KV, error) {
 		rr = append(rr, v)
 	}
 	return rr, nil
+}
+
+func (t *table) ExistTable(ctx context.Context) bool {
+	var ebpf = newBpfTool(
+		withExec(),
+		withJSON(),
+		withMap(),
+		withShowMapCmd(),
+	)
+	var r = new(bpfMaps)
+	var errs = new(bpfErr)
+	var err = ebpf.run(ctx, r, errs)
+	if err != nil {
+		return true
+	}
+	var exist = false
+	for i := range *r {
+		if (*r)[i].Name == t.file {
+			exist = true
+			break
+		} else {
+			continue
+		}
+	}
+	return exist
 }
 
 func (t *table) DeleteTable(ctx context.Context, key []byte) error {
