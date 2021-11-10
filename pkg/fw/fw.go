@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/advancevillage/fw/pkg/bpf"
+	"github.com/advancevillage/fw/pkg/notify"
 	"github.com/advancevillage/fw/pkg/rule"
 	"github.com/advancevillage/fw/proto"
 	pb "github.com/golang/protobuf/proto"
@@ -16,6 +18,17 @@ type IFwMgr interface {
 	Write(ctx context.Context, name string, version int, rules []*proto.FwRule) error
 }
 
+var (
+	prefix        = "%s.v%d"
+	named         = prefix + ".%s"
+	suffixProto   = "nw_proto"
+	suffixSrcIp   = "nw_src"
+	suffixDstIp   = "nw_dst"
+	suffixSrcPort = "tp_src"
+	suffixDstPort = "tp_dst"
+	suffixRule    = "rule"
+)
+
 type fwMgr struct {
 	protoTable   bpf.ITable //协议映射 lpm 8 x/8
 	srcIpTable   bpf.ITable //源IP映射 lpm
@@ -24,7 +37,11 @@ type fwMgr struct {
 	dstPortTable bpf.ITable //目的端口映射 lpm
 	ruleTable    bpf.ITable //规则表array
 
-	ruleEngine rule.IRuleEngine
+	ruleEngine rule.IRuleEngine //规则引擎
+
+	notifier notify.INotifier //更新内核程序
+
+	mu sync.Mutex
 }
 
 func NewFwMgr() (IFwMgr, error) {
@@ -52,6 +69,10 @@ func NewFwMgr() (IFwMgr, error) {
 	if err != nil {
 		return nil, err
 	}
+	notifier, err := notify.NewNotifier()
+	if err != nil {
+		return nil, err
+	}
 	ruleEngine := rule.NewRuleEngine()
 
 	var mgr = &fwMgr{
@@ -62,11 +83,14 @@ func NewFwMgr() (IFwMgr, error) {
 		dstPortTable: dstPortTable,
 		ruleTable:    ruleTable,
 		ruleEngine:   ruleEngine,
+		notifier:     notifier,
 	}
 	return mgr, nil
 }
 
 func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*proto.FwRule) error {
+	mgr.mu.Lock()
+	defer mgr.mu.Unlock()
 	//1. 解析防火墙规则
 	var lbvs, err = mgr.ruleEngine.Run(rules)
 	if err != nil {
@@ -76,12 +100,12 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 		return errors.New("parse firewall rule fail")
 	}
 	//2. 设置防火墙名称
-	mgr.protoTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Proto"))
-	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcIp"))
-	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcPort"))
-	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstIp"))
-	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstPort"))
-	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Rule"))
+	mgr.protoTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixProto))
+	mgr.srcIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcIp))
+	mgr.srcPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcPort))
+	mgr.dstIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstIp))
+	mgr.dstPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstPort))
+	mgr.ruleTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixRule))
 	//3. 写入map
 	err = mgr.writeRuleTable(ctx, lbvs.Rules)
 	if err != nil {
@@ -107,10 +131,17 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	if err != nil {
 		return err
 	}
+	err = mgr.notifier.UpdateSecurity(ctx, []byte(fmt.Sprintf(prefix, name, version)))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[string]rule.IBitmap) error {
+	if mgr.protoTable.ExistTable(ctx) {
+		return errors.New("proto table exist")
+	}
 	var err = mgr.protoTable.CreateTable(ctx)
 	if err != nil {
 		return err
@@ -130,6 +161,9 @@ func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[string]rule.IBi
 }
 
 func (mgr *fwMgr) writeSrcIpTable(ctx context.Context, table map[string]rule.IBitmap) error {
+	if mgr.srcIpTable.ExistTable(ctx) {
+		return errors.New("srcIp table exist")
+	}
 	var err = mgr.srcIpTable.CreateTable(ctx)
 	if err != nil {
 		return err
@@ -149,6 +183,9 @@ func (mgr *fwMgr) writeSrcIpTable(ctx context.Context, table map[string]rule.IBi
 }
 
 func (mgr *fwMgr) writeSrcPortTable(ctx context.Context, table map[string]rule.IBitmap) error {
+	if mgr.srcPortTable.ExistTable(ctx) {
+		return errors.New("srcPort table exist")
+	}
 	var err = mgr.srcPortTable.CreateTable(ctx)
 	if err != nil {
 		return err
@@ -168,6 +205,9 @@ func (mgr *fwMgr) writeSrcPortTable(ctx context.Context, table map[string]rule.I
 }
 
 func (mgr *fwMgr) writeDstIpTable(ctx context.Context, table map[string]rule.IBitmap) error {
+	if mgr.dstIpTable.ExistTable(ctx) {
+		return errors.New("dstIp table exist")
+	}
 	var err = mgr.dstIpTable.CreateTable(ctx)
 	if err != nil {
 		return err
@@ -187,6 +227,9 @@ func (mgr *fwMgr) writeDstIpTable(ctx context.Context, table map[string]rule.IBi
 }
 
 func (mgr *fwMgr) writeDstPortTable(ctx context.Context, table map[string]rule.IBitmap) error {
+	if mgr.dstPortTable.ExistTable(ctx) {
+		return errors.New("dstPort table exist")
+	}
 	var err = mgr.dstPortTable.CreateTable(ctx)
 	if err != nil {
 		return err
@@ -206,6 +249,9 @@ func (mgr *fwMgr) writeDstPortTable(ctx context.Context, table map[string]rule.I
 }
 
 func (mgr *fwMgr) writeRuleTable(ctx context.Context, table []*proto.BpfFwRule) error {
+	if mgr.ruleTable.ExistTable(ctx) {
+		return errors.New("rule table exist")
+	}
 	var err = mgr.ruleTable.CreateTable(ctx)
 	if err != nil {
 		return err
@@ -242,13 +288,15 @@ func (mgr *fwMgr) encode(m []byte, s []byte) {
 }
 
 func (mgr *fwMgr) Clean(ctx context.Context, name string, version int) error {
+	mgr.mu.Lock()
+	defer mgr.mu.Unlock()
 	//1. 设置防火墙名称
-	mgr.protoTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Proto"))
-	mgr.srcIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcIp"))
-	mgr.srcPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "SrcPort"))
-	mgr.dstIpTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstIp"))
-	mgr.dstPortTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "DstPort"))
-	mgr.ruleTable.UpdateTableName(fmt.Sprintf("%s.v%d.%s", name, version, "Rule"))
+	mgr.protoTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixProto))
+	mgr.srcIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcIp))
+	mgr.srcPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcPort))
+	mgr.dstIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstIp))
+	mgr.dstPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstPort))
+	mgr.ruleTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixRule))
 
 	mgr.protoTable.GCTable(ctx)
 	mgr.srcIpTable.GCTable(ctx)
