@@ -251,7 +251,7 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 			if mask == nil {
 				continue
 			}
-			if uint8(v.GetProtocol())&mask.Mask == mask.Proto {
+			if uint8(v.GetProtocol())&(0xff<<(0x08-mask.Mask)) == mask.Proto {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
