@@ -19,7 +19,7 @@ var writeTestData = map[string]struct {
 	rules   []*proto.FwRule
 }{
 	"case1": {
-		name:    randStr(8),
+		name:    randStr(6),
 		version: 0,
 		rules: []*proto.FwRule{
 			{

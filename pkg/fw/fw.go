@@ -19,9 +19,9 @@ type IFwMgr interface {
 }
 
 var (
-	prefix        = "%s.v%d"
-	named         = prefix + ".%s"
-	suffixProto   = "nw_proto"
+	prefix        = "%s_v%d"
+	named         = prefix + "_%s"
+	suffixProto   = "proto"
 	suffixSrcIp   = "nw_src"
 	suffixDstIp   = "nw_dst"
 	suffixSrcPort = "tp_src"
