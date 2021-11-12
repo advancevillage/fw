@@ -107,6 +107,7 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	if lbvs == nil || lbvs.Protocol == nil || lbvs.SrcIp == nil || lbvs.SrcPort == nil || lbvs.DstIp == nil || lbvs.DstPort == nil || lbvs.Rules == nil {
 		return errors.New("parse firewall rule fail")
 	}
+	var entries = len(lbvs.Rules) + 2
 	//2. 设置防火墙名称
 	mgr.protoTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixProto))
 	mgr.actionTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixAction))
@@ -116,13 +117,13 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	mgr.dstPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstPort))
 	mgr.ruleTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixRule))
 
-	mgr.protoTable.UpdateEntries(len(lbvs.Rules))
-	mgr.actionTable.UpdateEntries(len(lbvs.Rules))
-	mgr.srcIpTable.UpdateEntries(len(lbvs.Rules))
-	mgr.srcPortTable.UpdateEntries(len(lbvs.Rules))
-	mgr.dstIpTable.UpdateEntries(len(lbvs.Rules))
-	mgr.dstPortTable.UpdateEntries(len(lbvs.Rules))
-	mgr.ruleTable.UpdateEntries(len(lbvs.Rules))
+	mgr.protoTable.UpdateEntries(entries)
+	mgr.actionTable.UpdateEntries(entries)
+	mgr.srcIpTable.UpdateEntries(entries)
+	mgr.srcPortTable.UpdateEntries(entries)
+	mgr.dstIpTable.UpdateEntries(entries)
+	mgr.dstPortTable.UpdateEntries(entries)
+	mgr.ruleTable.UpdateEntries(entries)
 	//3. 写入map
 	err = mgr.writeRuleTable(ctx, lbvs.Rules)
 	if err != nil {
