@@ -48,7 +48,7 @@ func Test_write(t *testing.T) {
 	}
 	for n, p := range writeTestData {
 		f := func(t *testing.T) {
-			var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+			var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			err = s.Write(ctx, p.name, p.version, p.rules)
 			if err != nil {
