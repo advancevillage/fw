@@ -8,6 +8,7 @@ import (
 )
 
 type ITable interface {
+	UpdateEntries(entries int)
 	UpdateTableName(name string)
 	GCTable(ctx context.Context) error
 	ExistTable(ctx context.Context) bool
@@ -73,6 +74,10 @@ func NewTableClient(file string, tYpe string, keySize int, valueSize int, maxEnt
 
 func (t *table) UpdateTableName(name string) {
 	t.file = name
+}
+
+func (t *table) UpdateEntries(entries int) {
+	t.maxEntries = entries
 }
 
 func (t *table) CreateTable(ctx context.Context) error {

@@ -51,11 +51,6 @@ func NewFwMgr() (IFwMgr, error) {
 	if err != nil {
 		return nil, err
 	}
-	actionTable, err := bpf.NewTableClient(suffixAction, "lpm_trie", 5, rule.BitmapLength, rule.BitmapLength*8)
-	if err != nil {
-		return nil, err
-	}
-
 	srcIpTable, err := bpf.NewTableClient(suffixSrcIp, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
@@ -76,6 +71,11 @@ func NewFwMgr() (IFwMgr, error) {
 	if err != nil {
 		return nil, err
 	}
+	actionTable, err := bpf.NewTableClient(suffixAction, "hash", 4, 1, rule.BitmapLength*8)
+	if err != nil {
+		return nil, err
+	}
+
 	notifier, err := notify.NewNotifier()
 	if err != nil {
 		return nil, err
@@ -115,6 +115,14 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	mgr.dstIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstIp))
 	mgr.dstPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstPort))
 	mgr.ruleTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixRule))
+
+	mgr.protoTable.UpdateEntries(len(lbvs.Rules))
+	mgr.actionTable.UpdateEntries(len(lbvs.Rules))
+	mgr.srcIpTable.UpdateEntries(len(lbvs.Rules))
+	mgr.srcPortTable.UpdateEntries(len(lbvs.Rules))
+	mgr.dstIpTable.UpdateEntries(len(lbvs.Rules))
+	mgr.dstPortTable.UpdateEntries(len(lbvs.Rules))
+	mgr.ruleTable.UpdateEntries(len(lbvs.Rules))
 	//3. 写入map
 	err = mgr.writeRuleTable(ctx, lbvs.Rules)
 	if err != nil {
@@ -173,7 +181,7 @@ func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[string]rule.IBi
 	return nil
 }
 
-func (mgr *fwMgr) writeActionTable(ctx context.Context, table map[string]rule.IBitmap) error {
+func (mgr *fwMgr) writeActionTable(ctx context.Context, table map[uint32]uint8) error {
 	if mgr.actionTable.ExistTable(ctx) {
 		return errors.New("action table exist")
 	}
@@ -182,12 +190,9 @@ func (mgr *fwMgr) writeActionTable(ctx context.Context, table map[string]rule.IB
 		return err
 	}
 	for key, v := range table {
-		var k = rule.ProtoMaskDecode(key)
-		if v == nil || k == nil {
-			continue
-		}
-		var vv = v.Bytes()
-		err = mgr.actionTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, k.Proto}, vv)
+		var kk = []byte{uint8(key >> 24), uint8(key >> 16), uint8(key >> 8), uint8(key)}
+		var vv = []byte{v}
+		err = mgr.actionTable.UpdateTable(ctx, kk, vv)
 		if err != nil {
 			return err
 		}

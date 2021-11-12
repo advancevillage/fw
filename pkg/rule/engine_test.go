@@ -38,7 +38,7 @@ var testEngine = map[string]struct {
 				Protocol: "tcp",
 				DstIp:    "110.11.11.24/32",
 				DstPort:  "22",
-				Action:   "accept",
+				Action:   "drop",
 			},
 			{
 				Protocol: "udp",
