@@ -19,7 +19,7 @@ var writeTestData = map[string]struct {
 	rules   []*proto.FwRule
 }{
 	"case1": {
-		name:    randStr(6),
+		name:    randStr(4),
 		version: 0,
 		rules: []*proto.FwRule{
 			{
@@ -34,7 +34,7 @@ var writeTestData = map[string]struct {
 				SrcPort:  "1-65535",
 				DstIp:    "8.8.8.8/32",
 				DstPort:  "22-222",
-				Action:   "accept",
+				Action:   "drop",
 			},
 		},
 	},

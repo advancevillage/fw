@@ -27,10 +27,12 @@ var (
 	suffixSrcPort = "tp_src"
 	suffixDstPort = "tp_dst"
 	suffixRule    = "rule"
+	suffixAction  = "action"
 )
 
 type fwMgr struct {
 	protoTable   bpf.ITable //协议映射 lpm 8 x/8
+	actionTable  bpf.ITable //动作映射 lpm 8 x/8
 	srcIpTable   bpf.ITable //源IP映射 lpm
 	srcPortTable bpf.ITable //源端口映射 lpm
 	dstIpTable   bpf.ITable //目的IP映射 lpm
@@ -45,27 +47,32 @@ type fwMgr struct {
 }
 
 func NewFwMgr() (IFwMgr, error) {
-	protoTable, err := bpf.NewTableClient("proto", "lpm_trie", 5, rule.BitmapLength, rule.BitmapLength*8)
+	protoTable, err := bpf.NewTableClient(suffixProto, "lpm_trie", 5, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	srcIpTable, err := bpf.NewTableClient("srcIp", "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	actionTable, err := bpf.NewTableClient(suffixAction, "lpm_trie", 5, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	srcPortTable, err := bpf.NewTableClient("srcPort", "lpm_trie", 6, rule.BitmapLength, rule.BitmapLength*8)
+
+	srcIpTable, err := bpf.NewTableClient(suffixSrcIp, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	dstIpTable, err := bpf.NewTableClient("dstIp", "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	srcPortTable, err := bpf.NewTableClient(suffixSrcPort, "lpm_trie", 6, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	dstPortTable, err := bpf.NewTableClient("dstPort", "lpm_trie", 6, rule.BitmapLength, rule.BitmapLength*8)
+	dstIpTable, err := bpf.NewTableClient(suffixDstIp, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
-	ruleTable, err := bpf.NewTableClient("rules", "array", 4, 48, rule.BitmapLength*8)
+	dstPortTable, err := bpf.NewTableClient(suffixDstPort, "lpm_trie", 6, rule.BitmapLength, rule.BitmapLength*8)
+	if err != nil {
+		return nil, err
+	}
+	ruleTable, err := bpf.NewTableClient(suffixRule, "array", 4, 48, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +84,7 @@ func NewFwMgr() (IFwMgr, error) {
 
 	var mgr = &fwMgr{
 		protoTable:   protoTable,
+		actionTable:  actionTable,
 		srcIpTable:   srcIpTable,
 		srcPortTable: srcPortTable,
 		dstIpTable:   dstIpTable,
@@ -101,6 +109,7 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	}
 	//2. 设置防火墙名称
 	mgr.protoTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixProto))
+	mgr.actionTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixAction))
 	mgr.srcIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcIp))
 	mgr.srcPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcPort))
 	mgr.dstIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstIp))
@@ -131,6 +140,10 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	if err != nil {
 		return err
 	}
+	err = mgr.writeActionTable(ctx, lbvs.Action)
+	if err != nil {
+		return err
+	}
 	err = mgr.notifier.UpdateSecurity(ctx, []byte(fmt.Sprintf(prefix, name, version)))
 	if err != nil {
 		return err
@@ -153,6 +166,28 @@ func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[string]rule.IBi
 		}
 		var vv = v.Bytes()
 		err = mgr.protoTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, k.Proto}, vv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mgr *fwMgr) writeActionTable(ctx context.Context, table map[string]rule.IBitmap) error {
+	if mgr.actionTable.ExistTable(ctx) {
+		return errors.New("action table exist")
+	}
+	var err = mgr.actionTable.CreateTable(ctx)
+	if err != nil {
+		return err
+	}
+	for key, v := range table {
+		var k = rule.ProtoMaskDecode(key)
+		if v == nil || k == nil {
+			continue
+		}
+		var vv = v.Bytes()
+		err = mgr.actionTable.UpdateTable(ctx, []byte{k.Mask, 0x00, 0x00, 0x00, k.Proto}, vv)
 		if err != nil {
 			return err
 		}
@@ -292,6 +327,7 @@ func (mgr *fwMgr) Clean(ctx context.Context, name string, version int) error {
 	defer mgr.mu.Unlock()
 	//1. 设置防火墙名称
 	mgr.protoTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixProto))
+	mgr.actionTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixAction))
 	mgr.srcIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcIp))
 	mgr.srcPortTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixSrcPort))
 	mgr.dstIpTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixDstIp))
