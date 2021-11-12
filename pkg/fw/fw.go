@@ -190,8 +190,13 @@ func (mgr *fwMgr) writeActionTable(ctx context.Context, table map[uint32]uint8) 
 		return err
 	}
 	for key, v := range table {
-		var kk = []byte{uint8(key >> 24), uint8(key >> 16), uint8(key >> 8), uint8(key)}
-		var vv = []byte{v}
+		var kk = make([]byte, 4)
+		kk[0] = uint8(key >> 24)
+		kk[1] = uint8(key >> 16)
+		kk[2] = uint8(key >> 8)
+		kk[3] = uint8(key)
+		var vv = make([]byte, 1)
+		vv[0] = v
 		err = mgr.actionTable.UpdateTable(ctx, kk, vv)
 		if err != nil {
 			return err
