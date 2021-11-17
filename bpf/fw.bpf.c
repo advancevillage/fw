@@ -1,5 +1,13 @@
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
+#include <linux/in.h>
+#include <linux/if_ether.h>
+#include <linux/if_packet.h>
+#include <linux/if_vlan.h>
+#include <linux/ip.h>
+#include <linux/tcp.h>
+#include <linux/udp.h>
+#include <string.h>
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
 //map name:         iptables
@@ -15,10 +23,107 @@ struct bpf_map_def SEC("maps") iptables = {
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
-SEC("xdp_fw")
-int xpd_handle_fw(struct xdp_md *ctx) {
-    int rc = XDP_PASS;
-        return rc;
+
+static unsigned char *query_security_value() {
+    unsigned char  security_ptr[0x10];
+    memset(security_ptr, 0, 0x010);
+    stpcpy(security_ptr, "security.ptr");
+    
+    unsigned char  *security_value = NULL;
+    
+    security_value = bpf_map_lookup_elem(&iptable, security_ptr);
+
+    return security_value;
+}
+
+static int security_strategy(int proto, u32 src_ip, u16 src_port, u32 dst_ip, u16 dst_port) {
+    int rc = XDP_DROP;  //默认拒绝
+
+
+
+    rc = XDP_PASS;
+    return rc;
+}
+
+
+SEC("xdp_iptables")
+int xpd_handle_iptables(struct xdp_md *ctx) {
+    //1. 定义变量
+    int rc = XDP_DROP;  //默认拒绝
+
+    void *data = (void *)ctx->data;
+    void *data_end = (void *)ctx->data_end;
+
+    //2. 解析以太网协议头
+    struct ethhdr *eth = data;
+    u64 nh_off;
+    u16 h_proto;
+
+    nh_off = sizeof(*eth);
+    if (data + nh_off > data_end) {
+        goto end;
+    }
+    //https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/if_ether.h
+    h_proto = eth->h_proto;
+
+    if (h_proto == htons(ETH_P_8021Q) || h_proto == htons(ETH_P_8021AD)) {
+        //https://elixir.bootlin.com/linux/latest/source/include/linux/if_vlan.h
+        struct vlan_hdr *vhdr;
+
+        vhdr = data + nh_off;
+        nh_off += sizeof(struct vlan_hdr);
+        if (data + nh_off > data_end) {
+            goto end;
+        }
+        h_proto = vhdr->h_vlan_encapsulated_proto;
+    }
+    //解析网络层协议
+    struct iphdr *iph = data + nh_off;
+    nh_off += sizeof(struct iphdr);
+    if (data + nh_off > data_end) {
+        goto end;
+    }
+
+    u8 proto        = 0;
+    u32 src_ip      = 0;
+    u32 dst_ip      = 0;
+    u16 src_port    = 0;
+    u16 dst_port    = 0;
+
+    //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
+    proto   = iph->protocol;
+    src_ip  = iph->saddr;
+    dst_ip  = iph->daddr;
+    switch(proto) {
+    case 0x01: //icmp
+        break;
+    case 0x06: //tcp
+        struct tcphdr *tcph = data + nh_off;
+        nh_off += sizeof(struct tcphdr);
+        if (data + nh_off > data_end) {
+            goto end;
+        }
+        src_port = tcph->source;
+        dst_port = tcph->dest;
+        break;
+    case 0x11: //udp
+        struct udphdr *updh = data + nh_off;
+        nh_off += sizeof(struct udphdr);
+        if (data + nh_off > data_end) {
+            goto end;
+        }
+        src_port = udph->source;
+        dst_port = udph->dest;
+        break;
+    case 0x2f; //gre
+        break;
+    default:
+        goto end;
+    }
+    
+    rc = security_strategy(proto, src_ip, src_port, dst_ip, dst_port);
+end:
+    return rc;
 }
 
 char _license []SEC("license") = "GPL";
