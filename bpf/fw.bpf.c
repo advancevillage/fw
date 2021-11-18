@@ -7,7 +7,6 @@
 #include <linux/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
-#include <string.h>
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
 //map name:         iptables
@@ -25,18 +24,16 @@ struct bpf_map_def SEC("maps") iptables = {
 
 
 static unsigned char *query_security_value() {
-    unsigned char  security_ptr[0x10];
-    memset(security_ptr, 0, 0x010);
-    stpcpy(security_ptr, "security.ptr");
+    unsigned char  security_ptr[0x10] = {'s', 'e', 'c', 'u', 'r', 'i', 't', 'y', '.', 'p', 't', 'r', 0, 0, 0, 0};
     
     unsigned char  *security_value = NULL;
     
-    security_value = bpf_map_lookup_elem(&iptable, security_ptr);
+    security_value = bpf_map_lookup_elem(&iptables, security_ptr);
 
     return security_value;
 }
 
-static int security_strategy(int proto, u32 src_ip, u16 src_port, u32 dst_ip, u16 dst_port) {
+static int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
 
@@ -56,8 +53,8 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
 
     //2. 解析以太网协议头
     struct ethhdr *eth = data;
-    u64 nh_off;
-    u16 h_proto;
+    __be64 nh_off;
+    __be16 h_proto;
 
     nh_off = sizeof(*eth);
     if (data + nh_off > data_end) {
@@ -84,11 +81,11 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
         goto end;
     }
 
-    u8 proto        = 0;
-    u32 src_ip      = 0;
-    u32 dst_ip      = 0;
-    u16 src_port    = 0;
-    u16 dst_port    = 0;
+    __u8    proto       = 0;
+    __be32  src_ip      = 0;
+    __be32  dst_ip      = 0;
+    __be16  src_port    = 0;
+    __be16  dst_port    = 0;
 
     //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
     proto   = iph->protocol;
