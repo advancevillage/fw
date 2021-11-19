@@ -113,7 +113,7 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
         src_port = udph->source;
         dst_port = udph->dest;
         break;
-    case 0x2f; //gre
+    case 0x2f: //gre
         break;
     default:
         goto end;
