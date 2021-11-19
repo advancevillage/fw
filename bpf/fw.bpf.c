@@ -1,5 +1,4 @@
 #include <linux/bpf.h>
-#include <bpf/bpf_helpers.h>
 #include <linux/in.h>
 #include <linux/if_ether.h>
 #include <linux/if_packet.h>
@@ -7,6 +6,8 @@
 #include <linux/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
+#include <bpf/bpf_helpers.h>
+#include <bpf/bpf_endian.h>
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
 //map name:         iptables
@@ -56,19 +57,19 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     __be64 nh_off;
     __be16 h_proto;
 
-    nh_off = sizeof(*eth);
+    nh_off = (char*)(eth + 1) - (char*)eth;
     if (data + nh_off > data_end) {
         goto end;
     }
     //https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/if_ether.h
     h_proto = eth->h_proto;
 
-    if (h_proto == htons(ETH_P_8021Q) || h_proto == htons(ETH_P_8021AD)) {
+    if (h_proto == bpf_htons(ETH_P_8021Q) || h_proto == bpf_htons(ETH_P_8021AD)) {
         //https://elixir.bootlin.com/linux/latest/source/include/linux/if_vlan.h
         struct vlan_hdr *vhdr;
 
         vhdr = data + nh_off;
-        nh_off += sizeof(struct vlan_hdr);
+        nh_off += (char*)(vhdr + 1) - (char*)vhdr;
         if (data + nh_off > data_end) {
             goto end;
         }
@@ -76,7 +77,7 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     }
     //解析网络层协议
     struct iphdr *iph = data + nh_off;
-    nh_off += sizeof(struct iphdr);
+    nh_off += (char*)(iph + 1) - (char*)iph;
     if (data + nh_off > data_end) {
         goto end;
     }
@@ -96,7 +97,7 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
         break;
     case 0x06: //tcp
         struct tcphdr *tcph = data + nh_off;
-        nh_off += sizeof(struct tcphdr);
+        nh_off += (char*)(tcph + 1) - (char*)tcph;
         if (data + nh_off > data_end) {
             goto end;
         }
@@ -104,8 +105,8 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
         dst_port = tcph->dest;
         break;
     case 0x11: //udp
-        struct udphdr *updh = data + nh_off;
-        nh_off += sizeof(struct udphdr);
+        struct udphdr *udph = data + nh_off;
+        nh_off += (char*)(udph + 1) - (char*)udph;
         if (data + nh_off > data_end) {
             goto end;
         }
