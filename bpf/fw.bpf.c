@@ -1,13 +1,18 @@
 #include <linux/bpf.h>
 #include <linux/in.h>
 #include <linux/if_ether.h>
-#include <linux/if_packet.h>
-#include <linux/if_vlan.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
+
+//调试
+#define bpfprint(fmt, ...)                                        \
+    ({                                                            \
+        char ____fmt[] = fmt;                                     \
+        bpf_trace_printk(____fmt, sizeof(____fmt),##__VA_ARGS__); \
+    }) 
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
 //map name:         iptables
@@ -66,14 +71,14 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
 
     if (h_proto == bpf_htons(ETH_P_8021Q) || h_proto == bpf_htons(ETH_P_8021AD)) {
         //https://elixir.bootlin.com/linux/latest/source/include/linux/if_vlan.h
-        struct vlan_hdr *vhdr;
-
-        vhdr = data + nh_off;
-        nh_off += (char*)(vhdr + 1) - (char*)vhdr;
-        if (data + nh_off > data_end) {
-            goto end;
-        }
-        h_proto = vhdr->h_vlan_encapsulated_proto;
+        //struct vlan_hdr *vhdr = data + nh_off;
+        //nh_off += (char*)(vhdr + 1) - (char*)vhdr;
+        //if (data + nh_off > data_end) {
+        //    goto end;
+        //}
+        //h_proto = vhdr->h_vlan_encapsulated_proto;
+        //node: //don't support vlan, because vlan need sys support.
+        goto end;
     }
     //解析网络层协议
     struct iphdr *iph = data + nh_off;
@@ -96,22 +101,26 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     case 0x01: //icmp
         break;
     case 0x06: //tcp
-        struct tcphdr *tcph = data + nh_off;
-        nh_off += (char*)(tcph + 1) - (char*)tcph;
-        if (data + nh_off > data_end) {
-            goto end;
+        {
+            struct tcphdr *tcph = data + nh_off;
+            nh_off += (char*)(tcph + 1) - (char*)tcph;
+            if (data + nh_off > data_end) {
+                goto end;
+            }
+            src_port = tcph->source;
+            dst_port = tcph->dest;
         }
-        src_port = tcph->source;
-        dst_port = tcph->dest;
         break;
     case 0x11: //udp
-        struct udphdr *udph = data + nh_off;
-        nh_off += (char*)(udph + 1) - (char*)udph;
-        if (data + nh_off > data_end) {
-            goto end;
+        {
+            struct udphdr *udph = data + nh_off;
+            nh_off += (char*)(udph + 1) - (char*)udph;
+            if (data + nh_off > data_end) {
+                goto end;
+            }
+            src_port = udph->source;
+            dst_port = udph->dest;
         }
-        src_port = udph->source;
-        dst_port = udph->dest;
         break;
     case 0x2f: //gre
         break;
