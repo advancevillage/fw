@@ -7,12 +7,6 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
-//调试
-#define bpfprint(fmt, ...)                                        \
-    ({                                                            \
-        char ____fmt[] = fmt;                                     \
-        bpf_trace_printk(____fmt, sizeof(____fmt),##__VA_ARGS__); \
-    }) 
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
 //map name:         iptables
@@ -31,7 +25,6 @@ struct bpf_map_def SEC("maps") iptables = {
 
 static unsigned char *query_security_value() {
     unsigned char  security_ptr[0x10] = {'s', 'e', 'c', 'u', 'r', 'i', 't', 'y', '.', 'p', 't', 'r', 0, 0, 0, 0};
-    
     unsigned char  *security_value = NULL;
     
     security_value = bpf_map_lookup_elem(&iptables, security_ptr);
@@ -86,7 +79,11 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     if (data + nh_off > data_end) {
         goto end;
     }
-
+    //不支持分片报文
+    // 001 0 0000 0000 0000
+    if (iph->frag_off & 0x2000) {
+        goto end;
+    }
     __u8    proto       = 0;
     __be32  src_ip      = 0;
     __be32  dst_ip      = 0;
@@ -128,6 +125,8 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
         goto end;
     }
     
+    //调试 https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
+    bpf_printk("srcIp=%x dstIp=%x srcPort=%x dstPort=%x proto=%x\n",src_ip, dst_ip, src_port, dst_port, proto); 
     rc = security_strategy(proto, src_ip, src_port, dst_ip, dst_port);
 end:
     return rc;
