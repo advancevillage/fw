@@ -22,8 +22,7 @@ struct bpf_map_def SEC("maps") iptables = {
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
-
-static unsigned char *query_security_value() {
+static __inline unsigned char *query_security_value() {
     unsigned char  security_ptr[0x10] = {'s', 'e', 'c', 'u', 'r', 'i', 't', 'y', '.', 'p', 't', 'r', 0, 0, 0, 0};
     unsigned char  *security_value = NULL;
     
@@ -32,7 +31,7 @@ static unsigned char *query_security_value() {
     return security_value;
 }
 
-static int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
+static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
 
@@ -84,6 +83,7 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     if (iph->frag_off & 0x2000) {
         goto end;
     }
+
     __u8    proto       = 0;
     __be32  src_ip      = 0;
     __be32  dst_ip      = 0;
@@ -126,7 +126,10 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     }
     
     //调试 https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
-    bpf_printk("srcIp=%x dstIp=%x srcPort=%x dstPort=%x proto=%x\n",src_ip, dst_ip, src_port, dst_port, proto); 
+    //注意: bpf_printk args 最多3个
+    bpf_printk("srcIp=%x srcPort=%x proto=%x\n",src_ip, src_port, proto); 
+    bpf_printk("dstIp=%x dstPort=%x proto=%x\n",dst_ip, dst_port, proto); 
+
     rc = security_strategy(proto, src_ip, src_port, dst_ip, dst_port);
 end:
     return rc;
