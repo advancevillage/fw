@@ -41,7 +41,7 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     }
     //调试 https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
     //注意: bpf_printk args 最多3个
-    bpf_printk("name_and_ver = %s\n", char*(name_and_ver)); 
+    bpf_printk("name_and_ver = %s\n", (char*)name_and_ver); 
     bpf_printk("srcIp=%x srcPort=%x proto=%x\n",src_ip, src_port, proto); 
     bpf_printk("dstIp=%x dstPort=%x proto=%x\n",dst_ip, dst_port, proto); 
 
