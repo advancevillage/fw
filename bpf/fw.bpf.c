@@ -34,6 +34,16 @@ static __inline unsigned char *query_security_value() {
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
+    //获取iptables 防火墙表
+    unsigned char *name_and_ver = query_security_value();
+    if (!name_and_ver) {
+        return rc;
+    }
+    //调试 https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
+    //注意: bpf_printk args 最多3个
+    bpf_printk("name_and_ver = %s\n", char*(name_and_ver)); 
+    bpf_printk("srcIp=%x srcPort=%x proto=%x\n",src_ip, src_port, proto); 
+    bpf_printk("dstIp=%x dstPort=%x proto=%x\n",dst_ip, dst_port, proto); 
 
 
     rc = XDP_PASS;
@@ -124,12 +134,6 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     default:
         goto end;
     }
-    
-    //调试 https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
-    //注意: bpf_printk args 最多3个
-    bpf_printk("srcIp=%x srcPort=%x proto=%x\n",src_ip, src_port, proto); 
-    bpf_printk("dstIp=%x dstPort=%x proto=%x\n",dst_ip, dst_port, proto); 
-
     rc = security_strategy(proto, src_ip, src_port, dst_ip, dst_port);
 end:
     return rc;
