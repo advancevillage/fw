@@ -15,7 +15,7 @@
 //map max_entries:  0x10
 //map flags:        0x0
 struct bpf_map_def SEC("maps") iptables = {
-	.type    	 = BPF_MAP_TYPE_HASH,
+    .type        = BPF_MAP_TYPE_HASH,
     .key_size	 = 0x10,
     .value_size	 = 0x20,
     .max_entries = 0x10,
@@ -44,6 +44,7 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     bpf_printk("name_and_ver = %s\n", (char*)name_and_ver); 
     bpf_printk("srcIp=%x srcPort=%x proto=%x\n",src_ip, src_port, proto); 
     bpf_printk("dstIp=%x dstPort=%x proto=%x\n",dst_ip, dst_port, proto); 
+    //TODO: 动态加载策略表通过表名
 
 
     rc = XDP_PASS;
@@ -91,6 +92,7 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     default:
         goto end;
     }
+
     //解析网络层协议
     struct iphdr *iph = data + nh_off;
     nh_off += (char*)(iph + 1) - (char*)iph;
@@ -143,7 +145,9 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     default:
         goto end;
     }
+
     rc = security_strategy(proto, src_ip, src_port, dst_ip, dst_port);
+
 end:
     return rc;
 }
