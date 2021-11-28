@@ -32,6 +32,10 @@ func NewNotifier() (INotifier, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = t.CreateTable(context.TODO())
+	if err != nil {
+		return nil, err
+	}
 	return &iptables{
 		tableCli:  t,
 		keySize:   keySize,
@@ -40,9 +44,6 @@ func NewNotifier() (INotifier, error) {
 }
 
 func (i *iptables) UpdateSecurity(ctx context.Context, value []byte) error {
-	if !i.tableCli.ExistTable(ctx) {
-		return errors.New("not load kernel bpf prog")
-	}
 	return i.updateSecurity(ctx, value)
 }
 

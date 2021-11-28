@@ -71,7 +71,7 @@ func NewFwMgr() (IFwMgr, error) {
 	if err != nil {
 		return nil, err
 	}
-	actionTable, err := bpf.NewTableClient(suffixAction, "hash", 4, 1, rule.BitmapLength*8)
+	actionTable, err := bpf.NewTableClient(suffixAction, "array", 4, 1, rule.BitmapLength*8)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +80,7 @@ func NewFwMgr() (IFwMgr, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	ruleEngine := rule.NewRuleEngine()
 
 	var mgr = &fwMgr{
@@ -182,7 +183,7 @@ func (mgr *fwMgr) writeProtoTable(ctx context.Context, table map[string]rule.IBi
 	return nil
 }
 
-func (mgr *fwMgr) writeActionTable(ctx context.Context, table map[uint32]uint8) error {
+func (mgr *fwMgr) writeActionTable(ctx context.Context, table []uint8) error {
 	if mgr.actionTable.ExistTable(ctx) {
 		return errors.New("action table exist")
 	}

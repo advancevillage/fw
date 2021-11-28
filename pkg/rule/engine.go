@@ -19,7 +19,7 @@ type LBVS struct {
 	DstIp    map[string]IBitmap
 	DstPort  map[string]IBitmap
 	Rules    []*proto.BpfFwRule
-	Action   map[uint32]uint8
+	Action   []uint8
 }
 
 const (
@@ -243,7 +243,7 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 	var dstPort = map[string]IBitmap{
 		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newEmptyBitmap(),
 	}
-	var action = make(map[uint32]uint8)
+	var action = make([]uint8, len(rules))
 
 	for i, v := range rules {
 		//table protocol
@@ -313,7 +313,7 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 			}
 		}
 		//action
-		action[uint32(i)] = uint8(v.GetAction())
+		action[i] = uint8(v.GetAction())
 	}
 
 	lbvs.Protocol = protocol
