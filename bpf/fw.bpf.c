@@ -71,15 +71,24 @@ int xpd_handle_iptables(struct xdp_md *ctx) {
     //https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/if_ether.h
     h_proto = eth->h_proto;
 
-    if (h_proto == bpf_htons(ETH_P_8021Q) || h_proto == bpf_htons(ETH_P_8021AD)) {
+    //https://elixir.bootlin.com/linux/v5.10/source/include/uapi/linux/if_ether.h#L54
+    switch (h_proto) {
+    case bpf_htons(ETH_P_ARP):
+        rc = XDP_PASS;
+        goto end;
+    case bpf_htons(ETH_P_RARP):
+        rc = XDP_PASS;
+        goto end;
+    case bpf_htons(ETH_P_8021Q):
         //https://elixir.bootlin.com/linux/latest/source/include/linux/if_vlan.h
-        //struct vlan_hdr *vhdr = data + nh_off;
-        //nh_off += (char*)(vhdr + 1) - (char*)vhdr;
-        //if (data + nh_off > data_end) {
-        //    goto end;
-        //}
-        //h_proto = vhdr->h_vlan_encapsulated_proto;
-        //node: //don't support vlan, because vlan need sys support.
+        goto end;
+    case bpf_htons(ETH_P_8021AD):
+        goto end;
+    case bpf_htons(ETH_P_IP):
+        break;
+    case bpf_htons(ETH_P_IPV6):
+        goto end;
+    default:
         goto end;
     }
     //解析网络层协议
