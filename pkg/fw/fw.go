@@ -347,6 +347,7 @@ func (mgr *fwMgr) Clean(ctx context.Context, name string, version int) error {
 	mgr.ruleTable.UpdateTableName(fmt.Sprintf(named, name, version, suffixRule))
 
 	mgr.protoTable.GCTable(ctx)
+	mgr.actionTable.GCTable(ctx)
 	mgr.srcIpTable.GCTable(ctx)
 	mgr.srcPortTable.GCTable(ctx)
 	mgr.dstIpTable.GCTable(ctx)
