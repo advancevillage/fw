@@ -6,15 +6,16 @@
 #include <linux/udp.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
+#include <string.h>
 
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
-//map name:         iptables
+//map name:         metadata
 //map key_size:     0x10
 //map value_size:   0x20
 //map max_entries:  0x10
 //map flags:        0x0
-struct bpf_map_def SEC("maps") iptables = {
+struct bpf_map_def SEC("maps") metadata = {
     .type        = BPF_MAP_TYPE_HASH,
     .key_size	 = 0x10,
     .value_size	 = 0x20,
@@ -23,37 +24,61 @@ struct bpf_map_def SEC("maps") iptables = {
 };
 
 static __inline unsigned char *query_security_value() {
-    unsigned char  security_ptr[0x10] = {'s', 'e', 'c', 'u', 'r', 'i', 't', 'y', '.', 'p', 't', 'r', 0, 0, 0, 0};
-    unsigned char  *security_value = NULL;
-    
-    security_value = bpf_map_lookup_elem(&iptables, security_ptr);
-
-    return security_value;
+    char security_ptr[0x10];
+    memset(security_ptr, 0, 0x10); 
+    strcpy(security_ptr, "security.ptr");
+    return bpf_map_lookup_elem(&metadata, security_ptr);
 }
 
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
-    //获取iptables 防火墙表
-    unsigned char *name_and_ver = query_security_value();
+    //获取防火墙表
+    char *name_and_ver = (char*)query_security_value();
     if (!name_and_ver) {
-        return rc;
+        goto end;
     }
-    //调试 https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
-    //注意: bpf_printk args 最多3个
-    bpf_printk("name_and_ver = %s\n", (char*)name_and_ver); 
-    bpf_printk("srcIp=%x srcPort=%x proto=%x\n",src_ip, src_port, proto); 
-    bpf_printk("dstIp=%x dstPort=%x proto=%x\n",dst_ip, dst_port, proto); 
-    //TODO: 动态加载策略表通过表名
+    char *fs = "/sys/fs/bpf/"
 
+    size_t table_len = strlen(name_and_ver)+ strlen(fs) + 8;
+    char protoc[table_len];
+    char nw_src[table_len];
+    char nw_dst[table_len];
+    char tp_src[table_len];
+    char tp_dst[table_len];
+    char action[table_len];
+    memset(protoc, 0, table_len);
+    memset(nw_src, 0, table_len);
+    memset(nw_dst, 0, table_len);
+    memset(tp_src, 0, table_len);
+    memset(tp_dst, 0, table_len);
+    memset(action, 0, table_len);
+
+    sprintf(protoc, "%s%s_%s", fs, name_and_ver, "proto"); 
+    sprintf(nw_src, "%s%s_%s", fs, name_and_ver, "nw_src"); 
+    sprintf(nw_dst, "%s%s_%s", fs, name_and_ver, "nw_dst"); 
+    sprintf(tp_src, "%s%s_%s", fs, name_and_ver, "tp_src"); 
+    sprintf(tp_dst, "%s%s_%s", fs, name_and_ver, "tp_dst"); 
+    sprintf(action, "%s%s_%s", fs, name_and_ver, "action"); 
+
+    //调试: https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
+    //策略协议表
+    int protoc_fd = bpf_obj_get(protoc);
+    if (fd <= 0) {
+        //注意: bpf_printk args 最多3个
+        bpf_printk("protoc=%s protoc_fd=%x\n", protoc, protoc_fd); 
+        goto end;
+    }
 
     rc = XDP_PASS;
+
+end:
     return rc;
 }
 
 
-SEC("xdp_iptables")
-int xpd_handle_iptables(struct xdp_md *ctx) {
+SEC("xdp_fw")
+int xpd_handle_fw(struct xdp_md *ctx) {
     //1. 定义变量
     int rc = XDP_DROP;  //默认拒绝
 
