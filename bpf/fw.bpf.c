@@ -36,7 +36,7 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     //获取防火墙表
     char *name_and_ver = (char*)query_security_value();
     if (!name_and_ver) {
-        goto end;
+        goto leave;
     }
     char *fs = "/sys/fs/bpf/"; // 12 + 32 = 44 ~ 6B
     char protoc[0x30];
