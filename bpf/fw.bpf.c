@@ -38,7 +38,7 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     if (!name_and_ver) {
         goto end;
     }
-    char *fs = "/sys/fs/bpf/"
+    char *fs = "/sys/fs/bpf/";
 
     size_t table_len = strlen(name_and_ver)+ strlen(fs) + 8;
     char protoc[table_len];
@@ -64,7 +64,7 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     //调试: https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
     //策略协议表
     int protoc_fd = bpf_obj_get(protoc);
-    if (fd <= 0) {
+    if (protoc_fd <= 0) {
         //注意: bpf_printk args 最多3个
         bpf_printk("protoc=%s protoc_fd=%x\n", protoc, protoc_fd); 
         goto end;
