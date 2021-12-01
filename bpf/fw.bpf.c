@@ -38,21 +38,19 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     if (!name_and_ver) {
         goto end;
     }
-    char *fs = "/sys/fs/bpf/";
-
-    size_t table_len = strlen(name_and_ver)+ strlen(fs) + 8;
-    char protoc[table_len];
-    char nw_src[table_len];
-    char nw_dst[table_len];
-    char tp_src[table_len];
-    char tp_dst[table_len];
-    char action[table_len];
-    memset(protoc, 0, table_len);
-    memset(nw_src, 0, table_len);
-    memset(nw_dst, 0, table_len);
-    memset(tp_src, 0, table_len);
-    memset(tp_dst, 0, table_len);
-    memset(action, 0, table_len);
+    char *fs = "/sys/fs/bpf/"; // 12 + 32 = 44 ~ 6B
+    char protoc[0x30];
+    char nw_src[0x30];
+    char nw_dst[0x30];
+    char tp_src[0x30];
+    char tp_dst[0x30];
+    char action[0x30];
+    memset(protoc, 0, 0x30);
+    memset(nw_src, 0, 0x30);
+    memset(nw_dst, 0, 0x30);
+    memset(tp_src, 0, 0x30);
+    memset(tp_dst, 0, 0x30);
+    memset(action, 0, 0x30);
 
     sprintf(protoc, "%s%s_%s", fs, name_and_ver, "proto"); 
     sprintf(nw_src, "%s%s_%s", fs, name_and_ver, "nw_src"); 
@@ -67,12 +65,12 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     if (protoc_fd <= 0) {
         //注意: bpf_printk args 最多3个
         bpf_printk("protoc=%s protoc_fd=%x\n", protoc, protoc_fd); 
-        goto end;
+        goto leave;
     }
 
     rc = XDP_PASS;
 
-end:
+leave:
     return rc;
 }
 
