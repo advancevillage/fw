@@ -193,7 +193,7 @@ var testinnerTable = map[string]struct {
 		outerValueSzie:  4,
 		innerMaxEntries: 16,
 		outerMaxEntries: 16,
-		debug:           true,
+		debug:           false,
 	},
 }
 
@@ -245,9 +245,9 @@ func Test_hash_in_map(t *testing.T) {
 				t.Fatal("<> 1")
 				return
 			}
-			key2 := string(kv[0].Key)
-			if key != key2 {
-				t.Fatal(fmt.Sprintf("%s != %s", key, key2))
+			kk2 := kv[0].Key
+			if !bytes.Equal(kk, kk2) {
+				t.Fatal(fmt.Sprintf("%v != %v", kk, kk2))
 				return
 			}
 		}
