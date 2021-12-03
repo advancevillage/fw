@@ -16,6 +16,9 @@ type ITable interface {
 	QueryTable(ctx context.Context) ([]*KV, error)
 	DeleteTable(ctx context.Context, key []byte) error
 	UpdateTable(ctx context.Context, key []byte, value []byte) error
+
+	CreateMapInMapTable(ctx context.Context, innermap string) error
+	UpdateMapInMapTable(ctx context.Context, key []byte, inner string) error
 }
 
 type KV struct {
@@ -60,6 +63,11 @@ func NewTableClient(file string, tYpe string, keySize int, valueSize int, maxEnt
 		if valueSize < 1 || valueSize > (65535-260) {
 			return nil, fmt.Errorf("valueSize param is invalid")
 		}
+	case "hash_of_maps":
+		t.flags = bpf_f_no_prealloc
+		if valueSize != 4 {
+			return nil, fmt.Errorf("valueSize param is invalid")
+		}
 	default:
 		return nil, fmt.Errorf("don't support %s map type", tYpe)
 	}
@@ -68,7 +76,6 @@ func NewTableClient(file string, tYpe string, keySize int, valueSize int, maxEnt
 	t.keySize = keySize
 	t.valueSize = valueSize
 	t.maxEntries = maxEntries
-
 	return t, nil
 }
 
@@ -78,6 +85,48 @@ func (t *table) UpdateTableName(name string) {
 
 func (t *table) UpdateEntries(entries int) {
 	t.maxEntries = entries
+}
+
+func (t *table) CreateMapInMapTable(ctx context.Context, innermap string) error {
+	var ebpf = newBpfTool(
+		withExec(),
+		withJSON(),
+		withMap(),
+		withCreateMapInMapCmd(t.file, t.file, innermap, t.tYpe, t.keySize, t.valueSize, t.maxEntries, t.flags),
+	)
+	var r string
+	var errs = new(bpfErr)
+	var err = ebpf.run(ctx, &r, errs)
+	if err != nil {
+		return err
+	}
+	if len(errs.Err) > 0 {
+		err = errors.New(errs.Err)
+	}
+	return err
+}
+
+func (t *table) UpdateMapInMapTable(ctx context.Context, key []byte, inner string) error {
+	if len(key) != t.keySize {
+		return fmt.Errorf("key len is not %d", t.keySize)
+	}
+	var ebpf = newBpfTool(
+		withExec(),
+		withJSON(),
+		withMap(),
+		withUpdateMapInMapCmd(t.file, key, inner, "any"),
+	)
+	var r string
+	var errs = new(bpfErr)
+	var err = ebpf.run(ctx, &r, errs)
+	if err != nil {
+		return err
+	}
+	if len(errs.Err) > 0 {
+		err = errors.New(errs.Err)
+	}
+	return err
+
 }
 
 func (t *table) CreateTable(ctx context.Context) error {

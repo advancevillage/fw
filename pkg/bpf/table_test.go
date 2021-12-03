@@ -3,6 +3,7 @@ package bpf
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -161,6 +162,92 @@ func Test_table(t *testing.T) {
 			exist = ta.ExistTable(ctx)
 			if exist {
 				t.Fatal(exist, "table should not be exist")
+				return
+			}
+		}
+		t.Run(n, f)
+	}
+}
+
+var testinnerTable = map[string]struct {
+	inner           string
+	outer           string
+	innerType       string
+	outerType       string
+	innerKeySize    int
+	outterKeySize   int
+	innerValueSzie  int
+	outerValueSzie  int
+	innerMaxEntries int
+	outerMaxEntries int
+	debug           bool
+}{
+	"case-lpm-hashinmap": {
+		inner:           randStr(4),
+		outer:           randStr(4),
+		innerType:       "lpm_trie",
+		outerType:       "hash_of_maps",
+		innerKeySize:    8,
+		innerValueSzie:  16,
+		outterKeySize:   48,
+		outerValueSzie:  4,
+		innerMaxEntries: 16,
+		outerMaxEntries: 16,
+		debug:           true,
+	},
+}
+
+func Test_hash_in_map(t *testing.T) {
+	for n, p := range testinnerTable {
+		f := func(t *testing.T) {
+			var inner, err = NewTableClient(p.inner, p.innerType, p.innerKeySize, p.innerValueSzie, p.innerMaxEntries)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
+			//1. 创建内表
+			var ctx, cancel = context.WithTimeout(context.Background(), time.Second*20)
+			defer cancel()
+
+			err = inner.CreateTable(ctx)
+			if err != nil && !p.debug {
+				t.Fatal("create inner table fail", err)
+				return
+			}
+
+			//2. 创建外表
+			outer, err := NewTableClient(p.outer, p.outerType, p.outterKeySize, p.outerValueSzie, p.outerMaxEntries)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
+			err = outer.CreateMapInMapTable(ctx, p.inner)
+			if err != nil && !p.debug {
+				t.Fatal("create outer table fail", err)
+				return
+			}
+			//3. 更新内表
+			var key = "security.protocol"
+			var kk = make([]byte, p.outterKeySize)
+			copy(kk, []byte(key))
+			err = outer.UpdateMapInMapTable(ctx, kk, p.inner)
+			if err != nil && !p.debug {
+				t.Fatal("update outer table fail", err)
+				return
+			}
+			//4. 查询值
+			kv, err := outer.QueryTable(ctx)
+			if err != nil && !p.debug {
+				t.Fatal("query outer table fail", err)
+				return
+			}
+			if len(kv) != 1 {
+				t.Fatal("<> 1")
+				return
+			}
+			key2 := string(kv[0].Key)
+			if key != key2 {
+				t.Fatal(fmt.Sprintf("%s != %s", key, key2))
 				return
 			}
 		}

@@ -69,6 +69,14 @@ func withCreateMapCmd(name string, file string, tYpe string, keySize int, valueS
 	return withCmd(cmd)
 }
 
+func withCreateMapInMapCmd(name string, file string, inner string, tYpe string, keySize int, valueSize int, entries int, flags int) bpftoolOption {
+	//mount bpffs /sys/fs/bpf -t bpf
+	file = fmt.Sprintf("%s/%s", BPFFS, file)
+	inner = fmt.Sprintf("%s/%s", BPFFS, inner)
+	var cmd = fmt.Sprintf("create %s type %s inner_map pinned %s key %d value %d entries %d name %s flags %d", file, tYpe, inner, keySize, valueSize, entries, name, flags)
+	return withCmd(cmd)
+}
+
 func withDumpMapCmd(file string) bpftoolOption {
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
 	var cmd = fmt.Sprintf("dump pinned %s", file)
@@ -115,15 +123,22 @@ func withUpdateMapCmd(file string, key []byte, value []byte, flag string) bpftoo
 	for i := range key {
 		cmd = fmt.Sprintf("%s %x", cmd, key[i])
 	}
-
 	cmd = fmt.Sprintf("%s value hex", cmd)
-
 	for i := range value {
 		cmd = fmt.Sprintf("%s %x", cmd, value[i])
 	}
-
 	cmd = fmt.Sprintf("%s %s", cmd, flag)
+	return withCmd(cmd)
+}
 
+func withUpdateMapInMapCmd(file string, key []byte, inner string, flag string) bpftoolOption {
+	file = fmt.Sprintf("%s/%s", BPFFS, file)
+	inner = fmt.Sprintf("%s/%s", BPFFS, inner)
+	var cmd = fmt.Sprintf("update pinned %s key hex", file)
+	for i := range key {
+		cmd = fmt.Sprintf("%s %x", cmd, key[i])
+	}
+	cmd = fmt.Sprintf("%s value pinned %s %s", cmd, inner, flag)
 	return withCmd(cmd)
 }
 
