@@ -20,6 +20,7 @@ type bpftool struct {
 	options string
 	object  string
 	cmd     string
+	debug   bool
 }
 
 type bpftoolOption func(*bpftool)
@@ -32,6 +33,12 @@ func newBpfTool(opts ...bpftoolOption) *bpftool {
 	}
 
 	return a
+}
+
+func withDebug(debug bool) bpftoolOption {
+	return func(a *bpftool) {
+		a.debug = debug
+	}
 }
 
 func withExec() bpftoolOption {
@@ -123,6 +130,7 @@ func withUpdateMapCmd(file string, key []byte, value []byte, flag string) bpftoo
 	for i := range key {
 		cmd = fmt.Sprintf("%s %x", cmd, key[i])
 	}
+
 	cmd = fmt.Sprintf("%s value hex", cmd)
 	for i := range value {
 		cmd = fmt.Sprintf("%s %x", cmd, value[i])
@@ -150,7 +158,9 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 		buf    []byte
 		err    error
 	)
-	fmt.Println(cmd.String())
+	if a.debug {
+		fmt.Println(cmd.String())
+	}
 	stdOut, err = cmd.StdoutPipe()
 	if err != nil {
 		return err

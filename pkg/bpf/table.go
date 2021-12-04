@@ -38,11 +38,14 @@ type table struct {
 	valueSize  int
 	maxEntries int
 	flags      int
+	debug      bool
 }
 
 func NewTableClient(file string, tYpe string, keySize int, valueSize int, maxEntries int) (ITable, error) {
 	//1. 预设类型对应的Flags
-	var t = &table{}
+	var t = &table{
+		debug: true,
+	}
 	tYpe = strings.ToLower(tYpe)
 	switch tYpe {
 	case "hash":
@@ -92,6 +95,7 @@ func (t *table) CreateMapInMapTable(ctx context.Context, innermap string) error 
 		withExec(),
 		withJSON(),
 		withMap(),
+		withDebug(t.debug),
 		withCreateMapInMapCmd(t.file, t.file, innermap, t.tYpe, t.keySize, t.valueSize, t.maxEntries, t.flags),
 	)
 	var r string
@@ -111,6 +115,7 @@ func (t *table) UpdateMapInMapTable(ctx context.Context, key []byte, inner strin
 		return fmt.Errorf("key len is not %d", t.keySize)
 	}
 	var ebpf = newBpfTool(
+		withDebug(t.debug),
 		withExec(),
 		withJSON(),
 		withMap(),
@@ -131,6 +136,7 @@ func (t *table) UpdateMapInMapTable(ctx context.Context, key []byte, inner strin
 
 func (t *table) CreateTable(ctx context.Context) error {
 	var ebpf = newBpfTool(
+		withDebug(t.debug),
 		withExec(),
 		withJSON(),
 		withMap(),
@@ -156,6 +162,7 @@ func (t *table) UpdateTable(ctx context.Context, key []byte, value []byte) error
 		return fmt.Errorf("value len is not %d", t.valueSize)
 	}
 	var ebpf = newBpfTool(
+		withDebug(t.debug),
 		withExec(),
 		withJSON(),
 		withMap(),
@@ -175,6 +182,7 @@ func (t *table) UpdateTable(ctx context.Context, key []byte, value []byte) error
 
 func (t *table) QueryTable(ctx context.Context) ([]*KV, error) {
 	var ebpf = newBpfTool(
+		withDebug(t.debug),
 		withExec(),
 		withJSON(),
 		withMap(),
@@ -225,6 +233,7 @@ func (t *table) QueryTable(ctx context.Context) ([]*KV, error) {
 
 func (t *table) ExistTable(ctx context.Context) bool {
 	var ebpf = newBpfTool(
+		withDebug(t.debug),
 		withExec(),
 		withJSON(),
 		withMap(),
@@ -253,6 +262,7 @@ func (t *table) DeleteTable(ctx context.Context, key []byte) error {
 		return fmt.Errorf("key len is not %d", t.keySize)
 	}
 	var ebpf = newBpfTool(
+		withDebug(t.debug),
 		withExec(),
 		withJSON(),
 		withMap(),
