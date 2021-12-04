@@ -41,30 +41,31 @@ type fwMgr struct {
 	ruleEngine   rule.IRuleEngine //规则引擎
 	metaTable    meta.IMeta       //更新内核程序
 	mu           sync.Mutex
+	bml          int
 }
 
-func NewFwMgr() (IFwMgr, error) {
-	protoTable, err := bpf.NewTableClient(suffixProto, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+func NewFwMgr(bml int) (IFwMgr, error) {
+	protoTable, err := bpf.NewTableClient(suffixProto, "lpm_trie", 8, bml, bml*8)
 	if err != nil {
 		return nil, err
 	}
-	srcIpTable, err := bpf.NewTableClient(suffixSrcIp, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	srcIpTable, err := bpf.NewTableClient(suffixSrcIp, "lpm_trie", 8, bml, bml*8)
 	if err != nil {
 		return nil, err
 	}
-	srcPortTable, err := bpf.NewTableClient(suffixSrcPort, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	srcPortTable, err := bpf.NewTableClient(suffixSrcPort, "lpm_trie", 8, bml, bml*8)
 	if err != nil {
 		return nil, err
 	}
-	dstIpTable, err := bpf.NewTableClient(suffixDstIp, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	dstIpTable, err := bpf.NewTableClient(suffixDstIp, "lpm_trie", 8, bml, bml*8)
 	if err != nil {
 		return nil, err
 	}
-	dstPortTable, err := bpf.NewTableClient(suffixDstPort, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	dstPortTable, err := bpf.NewTableClient(suffixDstPort, "lpm_trie", 8, bml, bml*8)
 	if err != nil {
 		return nil, err
 	}
-	actionTable, err := bpf.NewTableClient(suffixAction, "lpm_trie", 8, rule.BitmapLength, rule.BitmapLength*8)
+	actionTable, err := bpf.NewTableClient(suffixAction, "lpm_trie", 8, bml, bml*8)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +74,7 @@ func NewFwMgr() (IFwMgr, error) {
 		return nil, err
 	}
 
-	ruleEngine := rule.NewRuleEngine(rule.WithBitmapLength(rule.BitmapLength))
+	ruleEngine := rule.NewRuleEngine(rule.WithBitmapLength(uint16(bml)))
 
 	var mgr = &fwMgr{
 		protoTable:   protoTable,
@@ -84,6 +85,7 @@ func NewFwMgr() (IFwMgr, error) {
 		dstPortTable: dstPortTable,
 		ruleEngine:   ruleEngine,
 		metaTable:    metaTable,
+		bml:          bml,
 	}
 	return mgr, nil
 }

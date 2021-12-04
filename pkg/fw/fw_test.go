@@ -43,7 +43,7 @@ var writeTestData = map[string]struct {
 }
 
 func Test_write(t *testing.T) {
-	var s, err = NewFwMgr()
+	var s, err = NewFwMgr(4)
 	if err != nil {
 		t.Fatal(err)
 		return
