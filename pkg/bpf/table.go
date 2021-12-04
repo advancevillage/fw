@@ -282,7 +282,9 @@ func (t *table) DeleteTable(ctx context.Context, key []byte) error {
 }
 
 func (t *table) GCTable(ctx context.Context) error {
-	var ebpf = newBpfTool()
+	var ebpf = newBpfTool(
+		withDebug(t.debug),
+	)
 	return ebpf.unlink(ctx, t.file)
 }
 
