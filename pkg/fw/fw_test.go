@@ -17,6 +17,7 @@ var writeTestData = map[string]struct {
 	name    string
 	version int
 	rules   []*proto.FwRule
+	debug   bool
 }{
 	"case1": {
 		name:    randStr(4),
@@ -37,6 +38,7 @@ var writeTestData = map[string]struct {
 				Action:   "drop",
 			},
 		},
+		debug: true,
 	},
 }
 
@@ -51,12 +53,12 @@ func Test_write(t *testing.T) {
 			var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			err = s.Write(ctx, p.name, p.version, p.rules)
-			if err != nil {
+			if err != nil && !p.debug {
 				t.Fatal(err)
 				return
 			}
 			err = s.Clean(ctx, p.name, p.version)
-			if err != nil {
+			if err != nil && !p.debug {
 				t.Fatal(err)
 				return
 			}

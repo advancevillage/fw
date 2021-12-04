@@ -228,7 +228,7 @@ var testBitmap = map[string]struct {
 
 func Test_bitmap(t *testing.T) {
 	var bm = NewBitmap(BitmapLength)
-	var ety = newEmptyBitmap()
+	var ety = NewBitmap(BitmapLength)
 	for n, p := range testBitmap {
 		f := func(t *testing.T) {
 			for i := p.start; i < p.end; i++ {

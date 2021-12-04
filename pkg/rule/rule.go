@@ -7,6 +7,11 @@ import (
 	"net"
 )
 
+type ActionMask struct {
+	Action uint8
+	Mask   uint8
+}
+
 type PortMask struct {
 	Port uint16
 	Mask uint8
@@ -20,6 +25,22 @@ type IpMask struct {
 type ProtoMask struct {
 	Proto uint8
 	Mask  uint8
+}
+
+func ActionMaskEncode(a *ActionMask) string {
+	var b = []byte{a.Action, a.Mask}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func ActionMaskDecode(s string) *ActionMask {
+	a, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil
+	}
+	return &ActionMask{
+		Action: a[0],
+		Mask:   a[1],
+	}
 }
 
 func IpMaskEncode(a *IpMask) string {
@@ -71,6 +92,10 @@ func ProtoMaskDecode(s string) *ProtoMask {
 		Proto: a[0],
 		Mask:  a[1],
 	}
+}
+
+func NewPortMask(min, max int) ([]*PortMask, error) {
+	return newPortMask(min, max)
 }
 
 func newPortMask(min, max int) ([]*PortMask, error) {
@@ -168,24 +193,4 @@ func (b *bitmap) Unset(pos uint16) {
 
 func (b *bitmap) Bytes() []byte {
 	return b.bit
-}
-
-func newEmptyBitmap() IBitmap {
-	var b = new(bitmap)
-	b.bit = make([]byte, BitmapLength)
-	b.n = BitmapLength
-	for i := uint16(0); i < BitmapLength; i++ {
-		b.bit[i] = 0x00
-	}
-	return b
-}
-
-func newFullBitmap() IBitmap {
-	var b = new(bitmap)
-	b.bit = make([]byte, BitmapLength)
-	b.n = BitmapLength
-	for i := uint16(0); i < BitmapLength; i++ {
-		b.bit[i] = 0xff
-	}
-	return b
 }

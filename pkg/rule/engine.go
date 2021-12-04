@@ -18,8 +18,8 @@ type LBVS struct {
 	SrcPort  map[string]IBitmap
 	DstIp    map[string]IBitmap
 	DstPort  map[string]IBitmap
+	Action   map[string]IBitmap
 	Rules    []*proto.BpfFwRule
-	Action   []uint8
 }
 
 const (
@@ -47,10 +47,24 @@ var (
 	}
 )
 
-type engine struct{}
+type EngineOption func(*engine)
 
-func NewRuleEngine() IRuleEngine {
-	return &engine{}
+type engine struct {
+	bml uint16
+}
+
+func NewRuleEngine(opts ...EngineOption) IRuleEngine {
+	var eng = new(engine)
+	for _, opt := range opts {
+		opt(eng)
+	}
+	return eng
+}
+
+func WithBitmapLength(x uint16) EngineOption {
+	return func(a *engine) {
+		a.bml = x
+	}
 }
 
 func (e *engine) Run(rules []*proto.FwRule) (*LBVS, error) {
@@ -228,22 +242,14 @@ func (e *engine) generate(rule *proto.FwRule) ([]*proto.BpfFwRule, error) {
 func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 	var lbvs = &LBVS{}
 
-	var protocol = map[string]IBitmap{
-		ProtoMaskEncode(&ProtoMask{Proto: 0x00, Mask: 0x00}): newEmptyBitmap(),
-	}
-	var srcIp = map[string]IBitmap{
-		IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): newEmptyBitmap(),
-	}
-	var srcPort = map[string]IBitmap{
-		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newEmptyBitmap(),
-	}
-	var dstIp = map[string]IBitmap{
-		IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): newEmptyBitmap(),
-	}
-	var dstPort = map[string]IBitmap{
-		PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): newEmptyBitmap(),
-	}
-	var action = make([]uint8, len(rules))
+	var (
+		protocol = map[string]IBitmap{}
+		srcIp    = map[string]IBitmap{}
+		srcPort  = map[string]IBitmap{}
+		dstIp    = map[string]IBitmap{}
+		dstPort  = map[string]IBitmap{}
+		action   = map[string]IBitmap{}
+	)
 
 	for i, v := range rules {
 		//table protocol
@@ -313,7 +319,18 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 			}
 		}
 		//action
-		action[i] = uint8(v.GetAction())
+		e.addAction(action, uint8(v.GetAction()), 0x08)
+		for key, value := range action {
+			var mask = ActionMaskDecode(key)
+			if mask == nil {
+				continue
+			}
+			if uint8(v.GetAction())&(0xff<<(0x08-mask.Mask))&0xff == mask.Action {
+				value.Set(uint16(i))
+			} else {
+				value.Unset(uint16(i))
+			}
+		}
 	}
 
 	lbvs.Protocol = protocol
@@ -342,7 +359,7 @@ func (e *engine) addIp(cidr map[string]IBitmap, ip uint32, mask uint8) {
 		}
 	}
 	if !ok {
-		cidr[IpMaskEncode(&IpMask{Ip: ip, Mask: mask})] = newEmptyBitmap()
+		cidr[IpMaskEncode(&IpMask{Ip: ip, Mask: mask})] = NewBitmap(e.bml)
 	}
 }
 
@@ -361,7 +378,7 @@ func (e *engine) addPort(cidr map[string]IBitmap, port uint16, mask uint8) {
 		}
 	}
 	if !ok {
-		cidr[PortMaskEncode(&PortMask{Port: port, Mask: mask})] = newEmptyBitmap()
+		cidr[PortMaskEncode(&PortMask{Port: port, Mask: mask})] = NewBitmap(e.bml)
 	}
 }
 
@@ -380,7 +397,25 @@ func (e *engine) addProto(cidr map[string]IBitmap, p uint8, mask uint8) {
 		}
 	}
 	if !ok {
-		cidr[ProtoMaskEncode(&ProtoMask{Proto: p, Mask: mask})] = newEmptyBitmap()
+		cidr[ProtoMaskEncode(&ProtoMask{Proto: p, Mask: mask})] = NewBitmap(e.bml)
 	}
+}
 
+func (e *engine) addAction(cidr map[string]IBitmap, a uint8, mask uint8) {
+	var ok = false
+	for enc := range cidr {
+		var v = ActionMaskDecode(enc)
+		if v == nil {
+			continue
+		}
+		if v.Action == a && v.Mask == mask {
+			ok = true
+			break
+		} else {
+			continue
+		}
+	}
+	if !ok {
+		cidr[ActionMaskEncode(&ActionMask{Action: a, Mask: mask})] = NewBitmap(e.bml)
+	}
 }
