@@ -14,6 +14,7 @@ type IMeta interface {
 	UpdateMetaFwSrcPort(ctx context.Context, name string) error
 	UpdateMetaFwDstIp(ctx context.Context, name string) error
 	UpdateMetaFwDstPort(ctx context.Context, name string) error
+	GC(ctx context.Context)
 }
 
 var (
@@ -71,6 +72,10 @@ func (i *metadata) UpdateMetaFwDstPort(ctx context.Context, name string) error {
 
 func (i *metadata) UpdateMetaFwAction(ctx context.Context, name string) error {
 	return i.updateMeta(ctx, fwaction, name)
+}
+
+func (i *metadata) GC(ctx context.Context) {
+	i.tableCli.GCTable(ctx)
 }
 
 func (i *metadata) updateMeta(ctx context.Context, key []byte, name string) error {
