@@ -197,6 +197,9 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 func (a *bpftool) unlink(ctx context.Context, file string) error {
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
 	var cmd = exec.CommandContext(ctx, "unlink", file)
+	if a.debug {
+		fmt.Println(cmd.String())
+	}
 	var err = cmd.Run()
 	if err != nil {
 		return err
