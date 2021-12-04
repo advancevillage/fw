@@ -9,6 +9,11 @@ import (
 
 type IMeta interface {
 	UpdateMetaFwProto(ctx context.Context, name string) error
+	UpdateMetaFwAction(ctx context.Context, name string) error
+	UpdateMetaFwSrcIp(ctx context.Context, name string) error
+	UpdateMetaFwSrcPort(ctx context.Context, name string) error
+	UpdateMetaFwDstIp(ctx context.Context, name string) error
+	UpdateMetaFwDstPort(ctx context.Context, name string) error
 }
 
 var (
@@ -21,7 +26,7 @@ var (
 	fwdstport = []byte("fw.dstport")
 	fwaction  = []byte("fw.action")
 
-	keySize   = int(0x20)
+	keySize   = int(0x10)
 	valueSize = int(0x04)
 	maxSize   = int(0x20)
 )
@@ -46,6 +51,26 @@ func NewMetadata() (IMeta, error) {
 
 func (i *metadata) UpdateMetaFwProto(ctx context.Context, name string) error {
 	return i.updateMeta(ctx, fwproto, name)
+}
+
+func (i *metadata) UpdateMetaFwSrcIp(ctx context.Context, name string) error {
+	return i.updateMeta(ctx, fwsrcip, name)
+}
+
+func (i *metadata) UpdateMetaFwSrcPort(ctx context.Context, name string) error {
+	return i.updateMeta(ctx, fwsrcport, name)
+}
+
+func (i *metadata) UpdateMetaFwDstIp(ctx context.Context, name string) error {
+	return i.updateMeta(ctx, fwdstip, name)
+}
+
+func (i *metadata) UpdateMetaFwDstPort(ctx context.Context, name string) error {
+	return i.updateMeta(ctx, fwdstport, name)
+}
+
+func (i *metadata) UpdateMetaFwAction(ctx context.Context, name string) error {
+	return i.updateMeta(ctx, fwaction, name)
 }
 
 func (i *metadata) updateMeta(ctx context.Context, key []byte, name string) error {

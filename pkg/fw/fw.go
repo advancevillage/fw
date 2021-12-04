@@ -151,6 +151,26 @@ func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*
 	if err != nil {
 		return err
 	}
+	err = mgr.metaTable.UpdateMetaFwAction(ctx, fwaction)
+	if err != nil {
+		return err
+	}
+	err = mgr.metaTable.UpdateMetaFwSrcIp(ctx, fwsrcip)
+	if err != nil {
+		return err
+	}
+	err = mgr.metaTable.UpdateMetaFwSrcPort(ctx, fwsrcport)
+	if err != nil {
+		return err
+	}
+	err = mgr.metaTable.UpdateMetaFwDstIp(ctx, fwdstip)
+	if err != nil {
+		return err
+	}
+	err = mgr.metaTable.UpdateMetaFwDstPort(ctx, fwdstport)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
