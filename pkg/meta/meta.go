@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
@@ -19,6 +20,7 @@ type IMeta interface {
 
 var (
 	//内核态创建.用户态负责查询和更新
+	jy        = "jy"
 	name      = "metadata"
 	fwproto   = []byte("fw.proto")
 	fwsrcip   = []byte("fw.srcip")
@@ -34,17 +36,23 @@ var (
 
 type metadata struct {
 	tableCli  bpf.ITable
+	jyCli     bpf.ITable
 	keySize   int
 	valueSize int
 }
 
 func NewMetadata() (IMeta, error) {
-	var t, err = bpf.NewTableClient(name, "hash_of_maps", keySize, valueSize, maxSize)
+	var mtCli, err = bpf.NewTableClient(name, "hash_of_maps", keySize, valueSize, maxSize)
+	if err != nil {
+		return nil, err
+	}
+	jyCli, err := bpf.NewTableClient(jy, "hash", keySize, valueSize, maxSize)
 	if err != nil {
 		return nil, err
 	}
 	return &metadata{
-		tableCli:  t,
+		tableCli:  mtCli,
+		jyCli:     jyCli,
 		keySize:   keySize,
 		valueSize: valueSize,
 	}, nil
@@ -89,6 +97,9 @@ func (i *metadata) update(ctx context.Context, key []byte, name string) error {
 	if !i.tableCli.ExistTable(ctx) {
 		err = i.tableCli.CreateMapInMapTable(ctx, name)
 	}
+	if !i.jyCli.ExistTable(ctx) {
+		err = i.jyCli.CreateTable(ctx)
+	}
 	if err != nil {
 		return err
 	}
@@ -98,6 +109,22 @@ func (i *metadata) update(ctx context.Context, key []byte, name string) error {
 	err = i.tableCli.UpdateMapInMapTable(ctx, key, name)
 	if err != nil {
 		return err
+	}
+	kv, err := i.tableCli.QueryTable(ctx)
+	if err != nil {
+		return err
+	}
+	for _, item := range kv {
+		var k = item.Key
+		var v = item.Value
+		if !bytes.Equal(k, key) {
+			continue
+		}
+		err = i.jyCli.UpdateTable(ctx, key, v)
+		if err != nil {
+			return err
+		}
+		break
 	}
 	return nil
 }
