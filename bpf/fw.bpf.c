@@ -10,13 +10,13 @@
 
 
 //定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
-//map name:         metadata
+//map name:         jy
 //map key_size:     0x10
 //map value_size:   0x20
 //map max_entries:  0x10
 //map flags:        0x0
-struct bpf_map_def SEC("maps") metadata = {
-    .type        = BPF_MAP_TYPE_HASH_OF_MAPS,
+struct bpf_map_def SEC("maps") jy = {
+    .type        = BPF_MAP_TYPE_HASH,
     .key_size	 = 0x10,
     .value_size	 = 0x04,
     .max_entries = 0x20,
@@ -27,14 +27,14 @@ static __inline void *query_fw_proto_map_fd() {
     char name[0x10];
     memset(name, 0, 0x10); 
     strcpy(name, "fw.proto");
-    return bpf_map_lookup_elem(&metadata, name);
+    return bpf_map_lookup_elem(&jy, name);
 }
 
 static __inline void *query_fw_srcip_map_fd() {
     char name[0x10];
     memset(name, 0, 0x10); 
     strcpy(name, "fw.srcip");
-    return bpf_map_lookup_elem(&metadata, name);
+    return bpf_map_lookup_elem(&jy, name);
 }
 
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
