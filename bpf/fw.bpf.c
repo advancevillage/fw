@@ -16,57 +16,39 @@
 //map max_entries:  0x10
 //map flags:        0x0
 struct bpf_map_def SEC("maps") metadata = {
-    .type        = BPF_MAP_TYPE_HASH,
+    .type        = BPF_MAP_TYPE_HASH_OF_MAPS,
     .key_size	 = 0x10,
-    .value_size	 = 0x20,
-    .max_entries = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 0x20,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
-static __inline unsigned char *query_security_value() {
-    char security_ptr[0x10];
-    memset(security_ptr, 0, 0x10); 
-    strcpy(security_ptr, "security.ptr");
-    return bpf_map_lookup_elem(&metadata, security_ptr);
+static __inline void *query_fw_proto_map_fd() {
+    char name[0x10];
+    memset(name, 0, 0x10); 
+    strcpy(name, "fw.proto");
+    return bpf_map_lookup_elem(&metadata, name);
+}
+
+static __inline void *query_fw_srcip_map_fd() {
+    char name[0x10];
+    memset(name, 0, 0x10); 
+    strcpy(name, "fw.srcip");
+    return bpf_map_lookup_elem(&metadata, name);
 }
 
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
-    //获取防火墙表
-    char *name_and_ver = (char*)query_security_value();
-    if (!name_and_ver) {
+    void *proto_fd = query_fw_proto_map_fd();
+    if (!proto_fd) {
         goto leave;
     }
-    char *fs = "/sys/fs/bpf/"; // 12 + 32 = 44 ~ 6B
-    char protoc[0x30];
-    char nw_src[0x30];
-    char nw_dst[0x30];
-    char tp_src[0x30];
-    char tp_dst[0x30];
-    char action[0x30];
-    memset(protoc, 0, 0x30);
-    memset(nw_src, 0, 0x30);
-    memset(nw_dst, 0, 0x30);
-    memset(tp_src, 0, 0x30);
-    memset(tp_dst, 0, 0x30);
-    memset(action, 0, 0x30);
-
-    sprintf(protoc, "%s%s_%s", fs, name_and_ver, "proto"); 
-    sprintf(nw_src, "%s%s_%s", fs, name_and_ver, "nw_src"); 
-    sprintf(nw_dst, "%s%s_%s", fs, name_and_ver, "nw_dst"); 
-    sprintf(tp_src, "%s%s_%s", fs, name_and_ver, "tp_src"); 
-    sprintf(tp_dst, "%s%s_%s", fs, name_and_ver, "tp_dst"); 
-    sprintf(action, "%s%s_%s", fs, name_and_ver, "action"); 
-
-    //调试: https://github.com/libbpf/libbpf/blob/master/src/bpf_helpers.h 
-    //策略协议表
-    int protoc_fd = bpf_obj_get(protoc);
-    if (protoc_fd <= 0) {
-        //注意: bpf_printk args 最多3个
-        bpf_printk("protoc=%s protoc_fd=%x\n", protoc, protoc_fd); 
+    void srcip_fd = query_fw_srcip_map_fd();
+    if (!srcip_fd) {
         goto leave;
     }
+    bpf_printk("proto_fd=%d\n", (int)(*proto_fd));
 
     rc = XDP_PASS;
 
