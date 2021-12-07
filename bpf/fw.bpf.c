@@ -30,6 +30,19 @@ static __inline void *query_fw_proto_map_fd() {
     return bpf_map_lookup_elem(&jy, name);
 }
 
+static __inline void *query_fw_proto_bitmap(void *t, __u8 proto) {
+    char key[0x08];
+    key[0x00] = 0x20;
+    key[0x01] = 0x00;
+    key[0x02] = 0x00;
+    key[0x03] = 0x00;
+    key[0x04] = 0x00;
+    key[0x05] = 0x00;
+    key[0x06] = 0x00;
+    key[0x07] = proto & 0xff;
+    return bpf_map_lookup_elem(t, key);
+}
+
 static __inline void *query_fw_srcip_map_fd() {
     char name[0x10];
     memset(name, 0, 0x10); 
@@ -42,13 +55,16 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
 
     void *proto_fd = query_fw_proto_map_fd();
     if (!proto_fd) {
+        bpf_printk("proto_fd=%d\n", *((int*)proto_fd));
         goto leave;
     }
     void *srcip_fd = query_fw_srcip_map_fd();
     if (!srcip_fd) {
+        bpf_printk("src_ip=%d\n", *((int*)srcip_fd));
         goto leave;
     }
-    bpf_printk("proto_fd=%d\n", *((int*)proto_fd));
+    void *proto_bit = query_fw_proto_bitmap(proto_fd, proto);
+    bpf_printk("proto_bit=%x\n", *((unsigned char*)proto_bit));
 
     rc = XDP_PASS;
 
