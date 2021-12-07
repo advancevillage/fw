@@ -44,11 +44,11 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     if (!proto_fd) {
         goto leave;
     }
-    void srcip_fd = query_fw_srcip_map_fd();
+    void *srcip_fd = query_fw_srcip_map_fd();
     if (!srcip_fd) {
         goto leave;
     }
-    bpf_printk("proto_fd=%d\n", (int)(*proto_fd));
+    bpf_printk("proto_fd=%d\n", *((int*)proto_fd));
 
     rc = XDP_PASS;
 
