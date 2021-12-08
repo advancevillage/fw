@@ -9,13 +9,12 @@
 #include <string.h>
 
 
-//定义数据Map和用户态通讯. 在内核态定义的map需要被引用. 如果未引用在加载过程中会被优化删除
-//map name:         jy
+//定义元数据
+//map name:         metadata
 //map key_size:     0x10
-//map value_size:   0x20
-//map max_entries:  0x10
-//map flags:        0x0
-struct bpf_map_def SEC("maps") jy = {
+//map value_size:   0x08
+//map max_entries:  0x20
+struct bpf_map_def SEC("maps") metadata = {
     .type        = BPF_MAP_TYPE_HASH,
     .key_size	 = 0x10,
     .value_size	 = 0x04,
@@ -23,48 +22,75 @@ struct bpf_map_def SEC("maps") jy = {
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
-static __inline void *query_fw_proto_map_fd() {
+struct bpf_map_def SEC("maps") ipv4_proto = {
+    .type        = BPF_MAP_TYPE_LPM_TRIE,
+    .key_size	 = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 10000,
+    .map_flags	 = BPF_F_NO_PREALLOC,
+};
+
+struct bpf_map_def SEC("maps") ipv4_action = {
+    .type        = BPF_MAP_TYPE_LPM_TRIE,
+    .key_size	 = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 10000,
+    .map_flags	 = BPF_F_NO_PREALLOC,
+};
+
+struct bpf_map_def SEC("maps") ipv4_nw_dst = {
+    .type        = BPF_MAP_TYPE_LPM_TRIE,
+    .key_size	 = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 10000,
+    .map_flags	 = BPF_F_NO_PREALLOC,
+};
+
+struct bpf_map_def SEC("maps") ipv4_nw_src = {
+    .type        = BPF_MAP_TYPE_LPM_TRIE,
+    .key_size	 = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 10000,
+    .map_flags	 = BPF_F_NO_PREALLOC,
+};
+
+struct bpf_map_def SEC("maps") ipv4_tp_dst = {
+    .type        = BPF_MAP_TYPE_LPM_TRIE,
+    .key_size	 = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 10000,
+    .map_flags	 = BPF_F_NO_PREALLOC,
+};
+
+struct bpf_map_def SEC("maps") ipv4_tp_dst = {
+    .type        = BPF_MAP_TYPE_LPM_TRIE,
+    .key_size	 = 0x10,
+    .value_size	 = 0x04,
+    .max_entries = 10000,
+    .map_flags	 = BPF_F_NO_PREALLOC,
+};
+
+static __inline __be64 *query_meta_fw_zone() {
     char name[0x10];
     memset(name, 0, 0x10); 
-    strcpy(name, "fw.proto");
-    return bpf_map_lookup_elem(&jy, name);
+    strcpy(name, "fw.zone");
+    __be64 *zone = (__be64*)bpf_map_lookup_elem(&metadata, name);
+    if (!zone) {
+        return -1;
+    }
+    return (*zone);
 }
-
-static __inline void *query_fw_proto_bitmap(void *t, __u8 proto) {
-    char key[0x08];
-    key[0x00] = 0x20;
-    key[0x01] = 0x00;
-    key[0x02] = 0x00;
-    key[0x03] = 0x00;
-    key[0x04] = 0x00;
-    key[0x05] = 0x00;
-    key[0x06] = 0x00;
-    key[0x07] = proto & 0xff;
-    return bpf_map_lookup_elem(t, key);
-}
-
-static __inline void *query_fw_srcip_map_fd() {
-    char name[0x10];
-    memset(name, 0, 0x10); 
-    strcpy(name, "fw.srcip");
-    return bpf_map_lookup_elem(&jy, name);
-}
+//TODO query bitmat
 
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
-    void *proto_fd = query_fw_proto_map_fd();
-    if (!proto_fd) {
-        bpf_printk("proto_fd=%d\n", *((int*)proto_fd));
+    __be64 zone = query_meta_fw_zone();
+    if (zone < 0) {
         goto leave;
     }
-    void *srcip_fd = query_fw_srcip_map_fd();
-    if (!srcip_fd) {
-        bpf_printk("src_ip=%d\n", *((int*)srcip_fd));
-        goto leave;
-    }
-    void *proto_bit = query_fw_proto_bitmap(proto_fd, proto);
-    bpf_printk("proto_bit=%x\n", *((unsigned char*)proto_bit));
+    //void *proto_bit = query_fw_proto_bitmap(proto_fd, proto);
+    //bpf_printk("proto_bit=%x\n", *((unsigned char*)proto_bit));
 
     rc = XDP_PASS;
 
