@@ -25,25 +25,18 @@ var writeTestData = map[string]struct {
 		rules: []*proto.FwRule{
 			{
 				Protocol: "tcp",
-				DstIp:    "110.11.11.24/32",
-				DstPort:  "22",
+				SrcIp:    "192.168.56.1/24",
+				DstIp:    "0.0.0.0/0",
+				DstPort:  "1-65535",
 				Action:   "accept",
 			},
 			{
 				Protocol: "udp",
-				SrcIp:    "114.114.114.114/24",
-				SrcPort:  "1-65535",
-				DstIp:    "8.8.8.8/32",
-				DstPort:  "22-222",
-				Action:   "drop",
+				SrcIp:    "192.168.56.1/24",
+				DstIp:    "0.0.0.0/0",
+				DstPort:  "1-65535",
+				Action:   "accept",
 			},
-		},
-		debug: true,
-	},
-	"case2": {
-		name:    randStr(4),
-		version: 1,
-		rules: []*proto.FwRule{
 			{
 				Protocol: "tcp",
 				DstIp:    "110.11.11.24/32",
@@ -55,7 +48,7 @@ var writeTestData = map[string]struct {
 				SrcIp:    "114.114.114.114/24",
 				SrcPort:  "1-65535",
 				DstIp:    "8.8.8.8/32",
-				DstPort:  "222",
+				DstPort:  "22-222",
 				Action:   "drop",
 			},
 		},
