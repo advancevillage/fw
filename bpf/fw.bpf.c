@@ -123,6 +123,136 @@ static __inline unsigned char* query_fw_proto_bits(unsigned char *zone, __u8 pro
     return bits;
 }
 
+static __inline unsigned char* query_fw_nw_src_bits(unsigned char *zone, __be32 src_ip) {
+    unsigned char kk[keySize];
+    kk[0x00] = 0x60;
+    kk[0x01] = 0x00;
+    kk[0x02] = 0x00;
+    kk[0x03] = 0x00;
+    kk[0x04] = zone[0x00];
+    kk[0x05] = zone[0x01]; 
+    kk[0x06] = zone[0x02]; 
+    kk[0x07] = zone[0x03]; 
+    kk[0x08] = zone[0x04]; 
+    kk[0x09] = zone[0x05]; 
+    kk[0x0a] = zone[0x06]; 
+    kk[0x0b] = zone[0x07]; 
+    kk[0x0c] = (unsigned char)(src_ip);
+    kk[0x0d] = (unsigned char)(src_ip >> 8);
+    kk[0x0e] = (unsigned char)(src_ip >> 16);
+    kk[0x0f] = (unsigned char)(src_ip >> 24);
+    
+    unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_nw_src, kk);
+    if (!bits) {
+        return NULL;
+    }
+    return bits;
+}
+
+static __inline unsigned char* query_fw_nw_dst_bits(unsigned char *zone, __be32 dst_ip) {
+    unsigned char kk[keySize];
+    kk[0x00] = 0x60;
+    kk[0x01] = 0x00;
+    kk[0x02] = 0x00;
+    kk[0x03] = 0x00;
+    kk[0x04] = zone[0x00];
+    kk[0x05] = zone[0x01]; 
+    kk[0x06] = zone[0x02]; 
+    kk[0x07] = zone[0x03]; 
+    kk[0x08] = zone[0x04]; 
+    kk[0x09] = zone[0x05]; 
+    kk[0x0a] = zone[0x06]; 
+    kk[0x0b] = zone[0x07]; 
+    kk[0x0c] = (unsigned char)(dst_ip);
+    kk[0x0d] = (unsigned char)(dst_ip >> 8);
+    kk[0x0e] = (unsigned char)(dst_ip >> 16);
+    kk[0x0f] = (unsigned char)(dst_ip >> 24);
+    
+    unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_nw_dst, kk);
+    if (!bits) {
+        return NULL;
+    }
+    return bits;
+}
+
+static __inline unsigned char* query_fw_tp_src_bits(unsigned char *zone, __be16 src_port) {
+    unsigned char kk[keySize];
+    kk[0x00] = 0x60;
+    kk[0x01] = 0x00;
+    kk[0x02] = 0x00;
+    kk[0x03] = 0x00;
+    kk[0x04] = zone[0x00];
+    kk[0x05] = zone[0x01]; 
+    kk[0x06] = zone[0x02]; 
+    kk[0x07] = zone[0x03]; 
+    kk[0x08] = zone[0x04]; 
+    kk[0x09] = zone[0x05]; 
+    kk[0x0a] = zone[0x06]; 
+    kk[0x0b] = zone[0x07]; 
+    kk[0x0c] = 0x00;
+    kk[0x0d] = 0x00;
+    kk[0x0e] = (unsigned char)(src_port);
+    kk[0x0f] = (unsigned char)(src_port >> 8);
+    
+    unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_tp_src, kk);
+    if (!bits) {
+        return NULL;
+    }
+    return bits;
+}
+
+static __inline unsigned char* query_fw_tp_dst_bits(unsigned char *zone, __be16 dst_port) {
+    unsigned char kk[keySize];
+    kk[0x00] = 0x60;
+    kk[0x01] = 0x00;
+    kk[0x02] = 0x00;
+    kk[0x03] = 0x00;
+    kk[0x04] = zone[0x00];
+    kk[0x05] = zone[0x01]; 
+    kk[0x06] = zone[0x02]; 
+    kk[0x07] = zone[0x03]; 
+    kk[0x08] = zone[0x04]; 
+    kk[0x09] = zone[0x05]; 
+    kk[0x0a] = zone[0x06]; 
+    kk[0x0b] = zone[0x07]; 
+    kk[0x0c] = 0x00;
+    kk[0x0d] = 0x00;
+    kk[0x0e] = (unsigned char)(dst_port);
+    kk[0x0f] = (unsigned char)(dst_port >> 8);
+    
+    unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_tp_dst, kk);
+    if (!bits) {
+        return NULL;
+    }
+    return bits;
+}
+
+static __inline unsigned char* query_fw_action_bits(unsigned char *zone, __u8 op) {
+    unsigned char kk[keySize];
+    kk[0x00] = 0x60;
+    kk[0x01] = 0x00;
+    kk[0x02] = 0x00;
+    kk[0x03] = 0x00;
+    kk[0x04] = zone[0x00];
+    kk[0x05] = zone[0x01]; 
+    kk[0x06] = zone[0x02]; 
+    kk[0x07] = zone[0x03]; 
+    kk[0x08] = zone[0x04]; 
+    kk[0x09] = zone[0x05]; 
+    kk[0x0a] = zone[0x06]; 
+    kk[0x0b] = zone[0x07]; 
+    kk[0x0c] = 0x00;
+    kk[0x0d] = 0x00;
+    kk[0x0e] = 0x00;
+    kk[0x0f] = op;
+    
+    unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_action, kk);
+    if (!bits) {
+        return NULL;
+    }
+    return bits;
+}
+
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
@@ -130,13 +260,40 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     if (!zone) {
         goto leave;
     }
-    bpf_printk("zone=%x\n", *zone);
     unsigned char *proto_bits = query_fw_proto_bits(zone, proto);
     if (!proto_bits) {
         goto leave;
     }
-    bpf_printk("proto_bits=%x\n", *proto_bits);
-    rc = XDP_PASS;
+    unsigned char *nw_src_bits = query_fw_nw_src_bits(zone, src_ip); 
+    if (!nw_src_bits) {
+        goto leave;
+    }
+    unsigned char *nw_dst_bits = query_fw_nw_dst_bits(zone, dst_ip);
+    if (!nw_dst_bits) {
+        goto leave;
+    }
+    unsigned char *tp_src_bits = query_fw_tp_src_bits(zone, src_port);
+    if (!tp_src_bits) {
+        goto leave;
+    }
+    unsigned char *tp_dst_bits = query_fw_tp_dst_bits(zone, dst_port);
+    if (!tp_dst_bits) {
+        goto leave;
+    }
+    unsigned char *accept = query_fw_action_bits(zone, 0x01);
+    if (!accept) {
+        goto leave;
+    }
+
+    char r[valueSize];
+    int  i = 0;
+    for (i = 0; i < valueSize; i++) {
+        r[i] =  proto_bits[i] & nw_src_bits[i] & nw_dst_bits[i] & tp_src_bits[i] & tp_dst_bits[i] & accept[i];
+        if (r[i] > 0x00) {
+            rc = XDP_PASS;
+            break;
+        }
+    }
 
 leave:
     return rc;
