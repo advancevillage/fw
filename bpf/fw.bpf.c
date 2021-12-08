@@ -285,7 +285,7 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
         goto leave;
     }
 
-    char r[valueSize];
+    unsigned char r[valueSize];
     int  i = 0;
     for (i = 0; i < valueSize; i++) {
         r[i] =  proto_bits[i] & nw_src_bits[i] & nw_dst_bits[i] & tp_src_bits[i] & tp_dst_bits[i] & accept[i];
