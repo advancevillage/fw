@@ -40,6 +40,27 @@ var writeTestData = map[string]struct {
 		},
 		debug: true,
 	},
+	"case2": {
+		name:    randStr(4),
+		version: 1,
+		rules: []*proto.FwRule{
+			{
+				Protocol: "tcp",
+				DstIp:    "110.11.11.24/32",
+				DstPort:  "22",
+				Action:   "accept",
+			},
+			{
+				Protocol: "udp",
+				SrcIp:    "114.114.114.114/24",
+				SrcPort:  "1-65535",
+				DstIp:    "8.8.8.8/32",
+				DstPort:  "222",
+				Action:   "drop",
+			},
+		},
+		debug: true,
+	},
 }
 
 func Test_write(t *testing.T) {

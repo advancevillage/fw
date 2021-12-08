@@ -77,7 +77,7 @@ func (i *metadata) UpdateMetaFwZone(ctx context.Context, zone int) error {
 func (i *metadata) update(ctx context.Context, key []byte, value []byte) error {
 	var err error
 	if !i.tableCli.ExistTable(ctx) {
-		err = i.tableCli.CreateMapInMapTable(ctx, name)
+		err = i.tableCli.CreateTable(ctx)
 	}
 	if err != nil {
 		return err
