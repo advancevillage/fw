@@ -45,7 +45,7 @@ var (
 	actionTableName  = fmt.Sprintf("%s_%s", "ipv4", suffixAction)
 
 	keySize    = 0x10
-	maxEntries = 10000
+	maxEntries = 0x01 << 16
 )
 
 type fwMgr struct {

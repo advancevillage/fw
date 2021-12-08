@@ -128,13 +128,14 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
 
     __be64 *zone = query_meta_fw_zone();
     if (!zone) {
+        bpf_printk("zone=%x\n", *zone);
         goto leave;
     }
     unsigned char *proto_bits = query_fw_proto_bits(*zone, proto);
     if (!proto_bits) {
+        bpf_printk("proto_bits=%x\n", *proto_bits);
         goto leave;
     }
-    bpf_printk("proto_bits=%x\n", *proto_bits);
     rc = XDP_PASS;
 
 leave:
