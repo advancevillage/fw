@@ -7,11 +7,6 @@ import (
 	"net"
 )
 
-type ActionMask struct {
-	Action uint8
-	Mask   uint8
-}
-
 type PortMask struct {
 	Port uint16
 	Mask uint8
@@ -25,22 +20,6 @@ type IpMask struct {
 type ProtoMask struct {
 	Proto uint8
 	Mask  uint8
-}
-
-func ActionMaskEncode(a *ActionMask) string {
-	var b = []byte{a.Action, a.Mask}
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-func ActionMaskDecode(s string) *ActionMask {
-	a, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return nil
-	}
-	return &ActionMask{
-		Action: a[0],
-		Mask:   a[1],
-	}
 }
 
 func IpMaskEncode(a *IpMask) string {

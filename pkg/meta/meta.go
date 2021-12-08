@@ -1,104 +1,83 @@
 package meta
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/advancevillage/fw/pkg/bpf"
 )
 
 type IMeta interface {
-	UpdateMetaFwProto(ctx context.Context, name string) error
-	UpdateMetaFwAction(ctx context.Context, name string) error
-	UpdateMetaFwSrcIp(ctx context.Context, name string) error
-	UpdateMetaFwSrcPort(ctx context.Context, name string) error
-	UpdateMetaFwDstIp(ctx context.Context, name string) error
-	UpdateMetaFwDstPort(ctx context.Context, name string) error
-	GC(ctx context.Context)
+	UpdateMetaFwZone(ctx context.Context, zone int) error
 }
 
 var (
 	//内核态创建.用户态负责查询和更新
-	jy        = "jy"
-	name      = "metadata"
-	fwproto   = []byte("fw.proto")
-	fwsrcip   = []byte("fw.srcip")
-	fwsrcport = []byte("fw.srcport")
-	fwdstip   = []byte("fw.dstip")
-	fwdstport = []byte("fw.dstport")
-	fwaction  = []byte("fw.action")
+	name   = "metadata"
+	fwzone = []byte("fw.zone")
+	fwts   = []byte("fw.ts")
 
 	keySize   = int(0x10)
-	valueSize = int(0x04)
+	valueSize = int(0x08)
 	maxSize   = int(0x20)
 )
 
 type metadata struct {
 	tableCli  bpf.ITable
-	jyCli     bpf.ITable
 	keySize   int
 	valueSize int
 }
 
 func NewMetadata() (IMeta, error) {
-	var mtCli, err = bpf.NewTableClient(name, "hash_of_maps", keySize, valueSize, maxSize)
-	if err != nil {
-		return nil, err
-	}
-	jyCli, err := bpf.NewTableClient(jy, "hash", keySize, valueSize, maxSize)
+	var cli, err = bpf.NewTableClient(name, "hash", keySize, valueSize, maxSize)
 	if err != nil {
 		return nil, err
 	}
 	return &metadata{
-		tableCli:  mtCli,
-		jyCli:     jyCli,
+		tableCli:  cli,
 		keySize:   keySize,
 		valueSize: valueSize,
 	}, nil
 }
 
-func (i *metadata) UpdateMetaFwProto(ctx context.Context, name string) error {
-	return i.updateMeta(ctx, fwproto, name)
-}
-
-func (i *metadata) UpdateMetaFwSrcIp(ctx context.Context, name string) error {
-	return i.updateMeta(ctx, fwsrcip, name)
-}
-
-func (i *metadata) UpdateMetaFwSrcPort(ctx context.Context, name string) error {
-	return i.updateMeta(ctx, fwsrcport, name)
-}
-
-func (i *metadata) UpdateMetaFwDstIp(ctx context.Context, name string) error {
-	return i.updateMeta(ctx, fwdstip, name)
-}
-
-func (i *metadata) UpdateMetaFwDstPort(ctx context.Context, name string) error {
-	return i.updateMeta(ctx, fwdstport, name)
-}
-
-func (i *metadata) UpdateMetaFwAction(ctx context.Context, name string) error {
-	return i.updateMeta(ctx, fwaction, name)
-}
-
-func (i *metadata) GC(ctx context.Context) {
-	i.tableCli.GCTable(ctx)
-}
-
-func (i *metadata) updateMeta(ctx context.Context, key []byte, name string) error {
+func (i *metadata) UpdateMetaFwZone(ctx context.Context, zone int) error {
 	var kk = make([]byte, i.keySize)
-	copy(kk, key)
-	return i.update(ctx, kk, name)
+	var vv = make([]byte, i.valueSize)
+	var now = time.Now().Unix()
+	copy(kk, []byte(fwzone))
+	vv[0x00] = uint8(zone >> 24)
+	vv[0x01] = uint8(zone >> 16)
+	vv[0x02] = uint8(zone >> 8)
+	vv[0x03] = uint8(zone)
+	vv[0x04] = 0x00
+	vv[0x05] = 0x00
+	vv[0x06] = 0x00
+	vv[0x07] = 0x00
+	var err = i.update(ctx, kk, vv)
+	if err != nil {
+		return err
+	}
+	copy(kk, []byte(fwts))
+	vv[0x00] = uint8(now >> 56)
+	vv[0x01] = uint8(now >> 48)
+	vv[0x02] = uint8(now >> 40)
+	vv[0x03] = uint8(now >> 32)
+	vv[0x04] = uint8(now >> 24)
+	vv[0x05] = uint8(now >> 16)
+	vv[0x06] = uint8(now >> 8)
+	vv[0x07] = uint8(now)
+	err = i.update(ctx, kk, vv)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (i *metadata) update(ctx context.Context, key []byte, name string) error {
+func (i *metadata) update(ctx context.Context, key []byte, value []byte) error {
 	var err error
 	if !i.tableCli.ExistTable(ctx) {
 		err = i.tableCli.CreateMapInMapTable(ctx, name)
-	}
-	if !i.jyCli.ExistTable(ctx) {
-		err = i.jyCli.CreateTable(ctx)
 	}
 	if err != nil {
 		return err
@@ -106,25 +85,12 @@ func (i *metadata) update(ctx context.Context, key []byte, name string) error {
 	if len(key) != i.keySize {
 		return errors.New("key size is invalid")
 	}
-	err = i.tableCli.UpdateMapInMapTable(ctx, key, name)
+	if len(value) != i.valueSize {
+		return errors.New("value size is invalid")
+	}
+	err = i.tableCli.UpdateTable(ctx, key, value)
 	if err != nil {
 		return err
-	}
-	kv, err := i.tableCli.QueryTable(ctx)
-	if err != nil {
-		return err
-	}
-	for _, item := range kv {
-		var k = item.Key
-		var v = item.Value
-		if !bytes.Equal(k, key) {
-			continue
-		}
-		err = i.jyCli.UpdateTable(ctx, key, v)
-		if err != nil {
-			return err
-		}
-		break
 	}
 	return nil
 }

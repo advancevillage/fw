@@ -42,7 +42,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x01, Mask: 0x08}): via(0),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0),
 			},
 		},
 	},
@@ -74,7 +74,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x01, Mask: 0x08}): via(0),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0),
 			},
 		},
 	},
@@ -106,7 +106,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x01, Mask: 0x08}): via(0),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0),
 			},
 		},
 	},
@@ -138,7 +138,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x01, Mask: 0x08}): via(0),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0),
 			},
 		},
 	},
@@ -181,7 +181,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0, 1, 2, 3, 4, 5),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x00, Mask: 0x08}): via(0, 1, 2, 3, 4, 5),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x00, Mask: 0x08}): via(0, 1, 2, 3, 4, 5),
 			},
 		},
 	},
@@ -235,8 +235,8 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0, 1, 2, 3, 4, 5, 6),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x00, Mask: 0x08}): via(0, 1, 2, 3, 4, 5),
-				ActionMaskEncode(&ActionMask{Action: 0x01, Mask: 0x08}): via(6),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x00, Mask: 0x08}): via(0, 1, 2, 3, 4, 5),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(6),
 			},
 		},
 	},
@@ -294,8 +294,8 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}):   via(12),
 			},
 			Action: map[string]IBitmap{
-				ActionMaskEncode(&ActionMask{Action: 0x00, Mask: 0x08}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
-				ActionMaskEncode(&ActionMask{Action: 0x01, Mask: 0x08}): via(12),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x00, Mask: 0x08}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(12),
 			},
 		},
 	},

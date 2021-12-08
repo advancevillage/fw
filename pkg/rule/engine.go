@@ -319,13 +319,13 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 			}
 		}
 		//action
-		e.addAction(action, uint8(v.GetAction()), 0x08)
+		e.addProto(action, uint8(v.GetAction()), 0x08)
 		for key, value := range action {
-			var mask = ActionMaskDecode(key)
+			var mask = ProtoMaskDecode(key)
 			if mask == nil {
 				continue
 			}
-			if uint8(v.GetAction())&(0xff<<(0x08-mask.Mask))&0xff == mask.Action {
+			if uint8(v.GetAction())&(0xff<<(0x08-mask.Mask))&0xff == mask.Proto {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
@@ -398,24 +398,5 @@ func (e *engine) addProto(cidr map[string]IBitmap, p uint8, mask uint8) {
 	}
 	if !ok {
 		cidr[ProtoMaskEncode(&ProtoMask{Proto: p, Mask: mask})] = NewBitmap(e.bml)
-	}
-}
-
-func (e *engine) addAction(cidr map[string]IBitmap, a uint8, mask uint8) {
-	var ok = false
-	for enc := range cidr {
-		var v = ActionMaskDecode(enc)
-		if v == nil {
-			continue
-		}
-		if v.Action == a && v.Mask == mask {
-			ok = true
-			break
-		} else {
-			continue
-		}
-	}
-	if !ok {
-		cidr[ActionMaskEncode(&ActionMask{Action: a, Mask: mask})] = NewBitmap(e.bml)
 	}
 }

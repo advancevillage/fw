@@ -38,7 +38,7 @@ var writeTestData = map[string]struct {
 				Action:   "drop",
 			},
 		},
-		debug: false,
+		debug: true,
 	},
 }
 
@@ -53,11 +53,6 @@ func Test_write(t *testing.T) {
 			var ctx, cancel = context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 			err = s.Write(ctx, p.name, p.version, p.rules)
-			if err != nil && !p.debug {
-				t.Fatal(err)
-				return
-			}
-			err = s.Clean(ctx, p.name, p.version)
 			if err != nil && !p.debug {
 				t.Fatal(err)
 				return
