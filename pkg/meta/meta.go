@@ -58,6 +58,9 @@ func (i *metadata) UpdateMetaFwZone(ctx context.Context, zone int) error {
 	if err != nil {
 		return err
 	}
+	for n := 0; n < i.keySize; n++ {
+		kk[n] = 0x00
+	}
 	copy(kk, []byte(fwts))
 	vv[0x00] = uint8(now >> 56)
 	vv[0x01] = uint8(now >> 48)
