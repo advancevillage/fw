@@ -64,7 +64,7 @@ struct bpf_map_def SEC("maps") ipv4_tp_dst = {
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
-struct bpf_map_def SEC("maps") ipv4_tp_dst = {
+struct bpf_map_def SEC("maps") ipv4_tp_src = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
     .key_size	 = keySize,
     .value_size	 = valueSize,
@@ -92,9 +92,9 @@ static __inline __be64 *query_meta_fw_zone() {
     name[0x0f] = 0x00;
     __be64 *zone = (__be64*)bpf_map_lookup_elem(&metadata, name);
     if (!zone) {
-        return -1;
+        return NULL;
     }
-    return (*zone);
+    return zone;
 }
 
 static __inline unsigned char* query_fw_proto_bits(__be64 zone, __u8 proto) {
@@ -103,14 +103,14 @@ static __inline unsigned char* query_fw_proto_bits(__be64 zone, __u8 proto) {
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
     kk[0x03] = 0x00;
-    kk[0x04] = __u8(zone >> 56) & 0xff;
-    kk[0x05] = __u8(zone >> 48) & 0xff;
-    kk[0x06] = __u8(zone >> 40) & 0xff;
-    kk[0x07] = __u8(zone >> 32) & 0xff;
-    kk[0x08] = __u8(zone >> 24) & 0xff;
-    kk[0x09] = __u8(zone >> 16) & 0xff;
-    kk[0x0a] = __u8(zone >> 8)  & 0xff;
-    kk[0x0b] = __u8(zone)       & 0xff;
+    kk[0x04] = (unsigned char)(zone >> 56) & 0xff;
+    kk[0x05] = (unsigned char)(zone >> 48) & 0xff;
+    kk[0x06] = (unsigned char)(zone >> 40) & 0xff;
+    kk[0x07] = (unsigned char)(zone >> 32) & 0xff;
+    kk[0x08] = (unsigned char)(zone >> 24) & 0xff;
+    kk[0x09] = (unsigned char)(zone >> 16) & 0xff;
+    kk[0x0a] = (unsigned char)(zone >> 8)  & 0xff;
+    kk[0x0b] = (unsigned char)(zone)       & 0xff;
     kk[0x0c] = 0x00;
     kk[0x0d] = 0x00;
     kk[0x0e] = 0x00;
@@ -126,16 +126,15 @@ static __inline unsigned char* query_fw_proto_bits(__be64 zone, __u8 proto) {
 static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port, __be32 dst_ip, __be16 dst_port) {
     int rc = XDP_DROP;  //默认拒绝
 
-    __be64 zone = query_meta_fw_zone();
-    if (zone < 0) {
+    __be64 *zone = query_meta_fw_zone();
+    if (!zone) {
         goto leave;
     }
-    unsigned char *proto_bits = query_fw_proto_bits(zone, proto);
+    unsigned char *proto_bits = query_fw_proto_bits(*zone, proto);
     if (!proto_bits) {
-        bpf_printk("proto_bits=%x\n", *proto_bits);
         goto leave;
     }
-
+    bpf_printk("proto_bits=%x\n", *proto_bits);
     rc = XDP_PASS;
 
 leave:
