@@ -250,129 +250,143 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		dstPort  = map[string]IBitmap{}
 		action   = map[string]IBitmap{}
 	)
-
+	//提取表项
+	for _, v := range rules {
+		var (
+			proto     = uint8(v.GetProtocol())
+			protoMask = uint8(0x08)
+			nwSrc     = uint32(v.GetSrcIp())
+			nwSrcMask = uint8(v.GetSrcIpMask())
+			tpSrc     = uint16(v.GetSrcPort())
+			tpSrcMask = uint8(v.GetSrcPortMask())
+			nwDst     = uint32(v.GetDstIp())
+			nwDstMask = uint8(v.GetDstIpMask())
+			tpDst     = uint16(v.GetDstPort())
+			tpDstMask = uint8(v.GetDstPortMask())
+			op        = uint8(v.GetAction())
+			opMask    = uint8(0x08)
+		)
+		//table protocol
+		e.addProto(protocol, proto, protoMask)
+		//table src ip
+		e.addIp(srcIp, nwSrc, nwSrcMask)
+		//table src port
+		e.addPort(srcPort, tpSrc, tpSrcMask)
+		//table dst ip
+		e.addIp(dstIp, nwDst, nwDstMask)
+		//table dst port
+		e.addPort(dstPort, tpDst, tpDstMask)
+		//action
+		e.addProto(action, op, opMask)
+	}
+	//设置值
 	for i, v := range rules {
 		//table protocol
-		e.addProto(protocol, uint8(v.GetProtocol()), 0x08)
 		for key, value := range protocol {
-			var mask = ProtoMaskDecode(key)
-			if mask == nil {
+			var (
+				match = ProtoMaskDecode(key)
+				proto = uint8(v.GetProtocol())
+				mask  = uint8(0xff << (0x08 - match.Mask))
+			)
+			if match == nil {
 				continue
 			}
-			if uint8(v.GetProtocol())&(0xff<<(0x08-mask.Mask)) == mask.Proto {
+			if proto&mask == match.Proto {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
 			}
 		}
 		//table src ip
-		e.addIp(srcIp, v.GetSrcIp(), uint8(v.GetSrcIpMask()))
 		for key, value := range srcIp {
-			var mask = IpMaskDecode(key)
-			if mask == nil {
+			var (
+				match     = IpMaskDecode(key)
+				nwSrc     = v.GetSrcIp()
+				mask      = uint32(0xffffffff << (0x20 - match.Mask))
+				nwSrcMask = uint32(0xffffffff << (0x20 - v.GetSrcIpMask()))
+			)
+			if match == nil {
 				continue
 			}
-			if v.GetSrcIp()&(0xffffffff<<(0x20-mask.Mask)) == mask.Ip {
+			if nwSrc&nwSrcMask&mask == match.Ip { //匹配
 				value.Set(uint16(i))
-				srcIp[key].Set(uint16(i))
+			} else if match.Ip&mask&nwSrcMask == nwSrc { //包含
+				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
 			}
 		}
-		//table src prot
-		e.addPort(srcPort, uint16(v.GetSrcPort()), uint8(v.GetSrcPortMask()))
+		//table src port
 		for key, value := range srcPort {
-			var mask = PortMaskDecode(key)
-			if mask == nil {
+			var (
+				match     = PortMaskDecode(key)
+				tpSrc     = uint16(v.GetSrcPort())
+				mask      = uint16(0xffff << (0x10 - match.Mask))
+				tpSrcMask = uint16(0xffff << (0x10 - v.GetSrcPortMask()))
+			)
+			if match == nil {
 				continue
 			}
-			if uint16(v.GetSrcPort())&(0xffff<<(0x10-mask.Mask))&0xffff == mask.Port {
+			if tpSrc&tpSrcMask&mask == match.Port { //匹配
+				value.Set(uint16(i))
+			} else if match.Port&mask&tpSrcMask == tpSrc { //包含
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
 			}
 		}
 		//table dst ip
-		e.addIp(dstIp, v.GetDstIp(), uint8(v.GetDstIpMask()))
 		for key, value := range dstIp {
-			var mask = IpMaskDecode(key)
-			if mask == nil {
+			var (
+				match     = IpMaskDecode(key)
+				nwDst     = v.GetDstIp()
+				mask      = uint32(0xffffffff << (0x20 - match.Mask))
+				nwDstMask = uint32(0xffffffff << (0x20 - v.GetDstIpMask()))
+			)
+			if match == nil {
 				continue
 			}
-			if v.GetDstIp()&(0xffffffff<<(0x20-mask.Mask)) == mask.Ip {
+			if nwDst&nwDstMask&mask == match.Ip { //匹配
+				value.Set(uint16(i))
+			} else if match.Ip&mask&nwDstMask == nwDst { //包含
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
 			}
 		}
-		//table dst prot
-		e.addPort(dstPort, uint16(v.GetDstPort()), uint8(v.GetDstPortMask()))
+		//table dst port
 		for key, value := range dstPort {
-			var mask = PortMaskDecode(key)
-			if mask == nil {
+			var (
+				match     = PortMaskDecode(key)
+				tpDst     = uint16(v.GetDstPort())
+				mask      = uint16(0xffff << (0x10 - match.Mask))
+				tpDstMask = uint16(0xffff << (0x10 - v.GetDstPortMask()))
+			)
+			if match == nil {
 				continue
 			}
-			if uint16(v.GetDstPort())&(0xffff<<(0x10-mask.Mask))&0xffff == mask.Port {
+			if tpDst&tpDstMask&mask == match.Port {
+				value.Set(uint16(i))
+			} else if match.Port&mask&tpDstMask == tpDst {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
 			}
 		}
-		//action
-		e.addProto(action, uint8(v.GetAction()), 0x08)
+		//table action
 		for key, value := range action {
-			var mask = ProtoMaskDecode(key)
-			if mask == nil {
+			var (
+				match = ProtoMaskDecode(key)
+				op    = uint8(v.GetAction())
+				mask  = uint8(0xff << (0x08 - match.Mask))
+			)
+			if match == nil {
 				continue
 			}
-			if uint8(v.GetAction())&(0xff<<(0x08-mask.Mask))&0xff == mask.Proto {
+			if op&mask == match.Proto {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
-			}
-		}
-	}
-
-	//纠正处理
-	for k1, v1 := range srcPort {
-		var m1 = PortMaskDecode(k1)
-		if m1 == nil {
-			continue
-		}
-		for k2, v2 := range srcPort {
-			if k1 == k2 {
-				continue
-			}
-			var m2 = PortMaskDecode(k2)
-			if m2 == nil {
-				continue
-			}
-			if m1.Port&(0xffff<<(0x10-m1.Mask))&(0xffff<<(0x10-m2.Mask))&0xffff == m2.Port {
-				v1.Or(v2)
-			} else {
-				continue
-			}
-		}
-	}
-
-	//纠正处理
-	for k1, v1 := range dstPort {
-		var m1 = PortMaskDecode(k1)
-		if m1 == nil {
-			continue
-		}
-		for k2, v2 := range dstPort {
-			if k1 == k2 {
-				continue
-			}
-			var m2 = PortMaskDecode(k2)
-			if m2 == nil {
-				continue
-			}
-			if m1.Port&(0xffff<<(0x10-m1.Mask))&(0xffff<<(0x10-m2.Mask))&0xffff == m2.Port {
-				v1.Or(v2)
-			} else {
-				continue
 			}
 		}
 	}

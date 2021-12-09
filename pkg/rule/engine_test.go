@@ -299,6 +299,54 @@ var testEngine = map[string]struct {
 			},
 		},
 	},
+	"case-fix-dstPort": {
+		rules: []*proto.FwRule{
+			{
+				Protocol: "tcp",
+				SrcIp:    "192.168.56.1/24",
+				DstIp:    "0.0.0.0/0",
+				DstPort:  "1-65535",
+				Action:   "accept",
+			},
+			{
+				Protocol: "udp",
+				SrcIp:    "192.168.56.1/24",
+				DstIp:    "0.0.0.0/0",
+				DstPort:  "1-65535",
+				Action:   "accept",
+			},
+			{
+				Protocol: "tcp",
+				DstIp:    "110.11.11.24/32",
+				DstPort:  "22",
+				Action:   "accept",
+			},
+		},
+		lbvs: &LBVS{
+			Protocol: map[string]IBitmap{
+				ProtoMaskEncode(&ProtoMask{Proto: number["udp"], Mask: 0x08}): via(1),
+				ProtoMaskEncode(&ProtoMask{Proto: number["tcp"], Mask: 0x08}): via(0, 2),
+			},
+			SrcIp: map[string]IBitmap{
+				IpMaskEncode(&IpMask{Ip: 0xc0a83800, Mask: 0x18}): via(0, 1, 2),
+				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2),
+			},
+			SrcPort: map[string]IBitmap{
+				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): via(0, 1, 2),
+			},
+			DstIp: map[string]IBitmap{
+				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2),
+				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2),
+			},
+			DstPort: map[string]IBitmap{
+				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): via(0, 1, 2),
+				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}):   via(0, 1, 2),
+			},
+			Action: map[string]IBitmap{
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0, 1, 2),
+			},
+		},
+	},
 }
 
 func Test_engine(t *testing.T) {
@@ -337,7 +385,7 @@ func equalMap(t *testing.T, name string, a map[string]IBitmap, b map[string]IBit
 			return
 		}
 		if !bytes.Equal(v.Bytes(), vv.Bytes()) {
-			t.Fatalf("%s v != vv\n", name)
+			t.Fatalf("%s %v != %v\n", name, v.Bytes(), vv.Bytes())
 			return
 		}
 	}
