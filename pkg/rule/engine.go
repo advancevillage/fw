@@ -333,6 +333,50 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		}
 	}
 
+	//纠正处理
+	for k1, v1 := range srcPort {
+		var m1 = PortMaskDecode(k1)
+		if m1 == nil {
+			continue
+		}
+		for k2, v2 := range srcPort {
+			if k1 == k2 {
+				continue
+			}
+			var m2 = PortMaskDecode(k2)
+			if m2 == nil {
+				continue
+			}
+			if m1.Port&(0xffff<<(0x10-m1.Mask))&(0xffff<<(0x10-m2.Mask))&0xffff == m2.Port {
+				v1.Or(v2)
+			} else {
+				continue
+			}
+		}
+	}
+
+	//纠正处理
+	for k1, v1 := range dstPort {
+		var m1 = PortMaskDecode(k1)
+		if m1 == nil {
+			continue
+		}
+		for k2, v2 := range dstPort {
+			if k1 == k2 {
+				continue
+			}
+			var m2 = PortMaskDecode(k2)
+			if m2 == nil {
+				continue
+			}
+			if m1.Port&(0xffff<<(0x10-m1.Mask))&(0xffff<<(0x10-m2.Mask))&0xffff == m2.Port {
+				v1.Or(v2)
+			} else {
+				continue
+			}
+		}
+	}
+
 	lbvs.Protocol = protocol
 	lbvs.SrcIp = srcIp
 	lbvs.SrcPort = srcPort

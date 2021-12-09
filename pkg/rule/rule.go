@@ -142,6 +142,7 @@ const (
 )
 
 type IBitmap interface {
+	Or(a IBitmap)
 	Bytes() []byte
 	Set(pos uint16)
 	Unset(pos uint16)
@@ -172,4 +173,12 @@ func (b *bitmap) Unset(pos uint16) {
 
 func (b *bitmap) Bytes() []byte {
 	return b.bit
+}
+
+func (b *bitmap) Or(a IBitmap) {
+	var bb = a.Bytes()
+	var nn = uint16(len(bb))
+	for i := uint16(0); i < b.n && i < nn; i++ {
+		b.bit[i] |= bb[i]
+	}
 }

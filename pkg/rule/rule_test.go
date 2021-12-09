@@ -241,5 +241,40 @@ func Test_bitmap(t *testing.T) {
 		}
 		t.Run(n, f)
 	}
+}
 
+var testBitmapOrOp = map[string]struct {
+	size uint16
+	a    []uint16
+	b    []uint16
+	c    []uint16
+}{
+	"case1": {
+		size: 2,
+		a:    []uint16{1, 3, 5, 7, 9},
+		b:    []uint16{0, 3, 6, 8, 9},
+		c:    []uint16{0, 1, 3, 5, 6, 7, 8, 9},
+	},
+}
+
+func Test_bitmap_op_or(t *testing.T) {
+	for n, p := range testBitmapOrOp {
+		var a = NewBitmap(p.size)
+		var b = NewBitmap(p.size)
+		var c = NewBitmap(p.size)
+		f := func(t *testing.T) {
+			for _, v := range p.a {
+				a.Set(v)
+			}
+			for _, v := range p.b {
+				b.Set(v)
+			}
+			for _, v := range p.c {
+				c.Set(v)
+			}
+			a.Or(b)
+			assert.Equal(t, a.Bytes(), c.Bytes())
+		}
+		t.Run(n, f)
+	}
 }

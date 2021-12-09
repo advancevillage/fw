@@ -226,7 +226,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x0080, Mask: 0x0a}): via(3),
 				PortMaskEncode(&PortMask{Port: 0x00c0, Mask: 0x0d}): via(4),
 				PortMaskEncode(&PortMask{Port: 0x00c8, Mask: 0x10}): via(5),
-				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(6),
+				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(2, 6),
 			},
 			DstIp: map[string]IBitmap{
 				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2, 3, 4, 5, 6),
@@ -283,7 +283,7 @@ var testEngine = map[string]struct {
 				PortMaskEncode(&PortMask{Port: 0x0080, Mask: 0x0a}): via(6, 7),
 				PortMaskEncode(&PortMask{Port: 0x00c0, Mask: 0x0d}): via(8, 9),
 				PortMaskEncode(&PortMask{Port: 0x00c8, Mask: 0x10}): via(10, 11),
-				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(12),
+				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(4, 5, 12),
 			},
 			DstIp: map[string]IBitmap{
 				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
