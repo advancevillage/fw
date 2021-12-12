@@ -1,0 +1,21 @@
+name: UnitTest
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: go-version
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: rule
+      run: go test -v ./pkg/rule
+

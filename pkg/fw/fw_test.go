@@ -52,7 +52,7 @@ var writeTestData = map[string]struct {
 				Action:   "drop",
 			},
 		},
-		debug: true,
+		debug: false,
 	},
 }
 
