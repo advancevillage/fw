@@ -26,7 +26,7 @@ import (
 //				 key
 
 type IFwMgr interface {
-	Write(ctx context.Context, name string, version int, rules []*proto.FwRule) error
+	Write(ctx context.Context, version int, rules []*proto.FwRule) error
 }
 
 var (
@@ -107,7 +107,7 @@ func NewFwMgr(bml int) (IFwMgr, error) {
 	return mgr, nil
 }
 
-func (mgr *fwMgr) Write(ctx context.Context, name string, version int, rules []*proto.FwRule) error {
+func (mgr *fwMgr) Write(ctx context.Context, version int, rules []*proto.FwRule) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 	//1. 解析防火墙规则

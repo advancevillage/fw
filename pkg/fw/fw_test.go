@@ -14,13 +14,11 @@ func init() {
 }
 
 var writeTestData = map[string]struct {
-	name    string
 	version int
 	rules   []*proto.FwRule
 	debug   bool
 }{
 	"case1": {
-		name:    randStr(4),
 		version: 0,
 		rules: []*proto.FwRule{
 			{
@@ -66,7 +64,7 @@ func Test_write(t *testing.T) {
 		f := func(t *testing.T) {
 			var ctx, cancel = context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
-			err = s.Write(ctx, p.name, p.version, p.rules)
+			err = s.Write(ctx, p.version, p.rules)
 			if err != nil && !p.debug {
 				t.Fatal(err)
 				return
@@ -75,15 +73,4 @@ func Test_write(t *testing.T) {
 		t.Run(n, f)
 	}
 
-}
-
-func randStr(length int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
-	for i := 0; i < length; i++ {
-		result = append(result, bytes[rand.Intn(len(bytes))])
-	}
-	return string(result)
 }

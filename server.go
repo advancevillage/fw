@@ -7,6 +7,7 @@ import (
 
 	"github.com/advancevillage/3rd/logx"
 	"github.com/advancevillage/3rd/netx"
+	"github.com/advancevillage/fw/pkg/fw"
 )
 
 type SrvCfg struct {
@@ -22,6 +23,7 @@ type SrvCfg struct {
 
 type Srv struct {
 	cfg     *SrvCfg
+	fwCli   fw.IFwMgr
 	httpSrv netx.IHTTPServer
 	logger  logx.ILogger
 	ctx     context.Context
@@ -47,12 +49,18 @@ func NewSrv(cfg *SrvCfg) (*Srv, error) {
 	if err != nil {
 		panic(err)
 	}
-	//3.
+	//3. fw
+	fwCli, err := fw.NewFwMgr(64)
+	if err != nil {
+		panic(err)
+	}
+
 	s.logger = logger
 	s.httpSrv = srv
 	s.ctx = ctx
 	s.cancel = cancel
 	s.cfg = cfg
+	s.fwCli = fwCli
 
 	return s, nil
 }
@@ -65,8 +73,4 @@ func (s *Srv) Start() {
 	case <-s.ctx.Done():
 	}
 	s.logger.Infow(s.ctx, "exit server", "listen http", fmt.Sprintf("%s:%d", s.cfg.HttpCfg.Host, s.cfg.HttpCfg.Port))
-}
-
-func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
-
 }
