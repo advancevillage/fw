@@ -50,7 +50,7 @@ func NewSrv(cfg *SrvCfg) (*Srv, error) {
 		panic(err)
 	}
 	//3. fw
-	fwCli, err := fw.NewFwMgr(64)
+	fwCli, err := fw.NewFwMgr(8)
 	if err != nil {
 		panic(err)
 	}

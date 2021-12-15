@@ -8,7 +8,7 @@
 #include <bpf/bpf_endian.h>
 
 #define keySize     0x10
-#define valueSize   0x04
+#define valueSize   0x08
 #define maxEntry    (0x01 << 16) 
 
 //定义元数据
