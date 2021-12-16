@@ -24,7 +24,12 @@ message("tag: " ${PROJECT_TAG})
 
 
 execute_process(
-    COMMAND sh -c "cat ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+    COMMAND sh -c "sed -i '' 's/#define bpfTag      0x0000000000000000/#define bpfTag      0x${PROJECT_TAG}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+    TIMEOUT 3
+)
+
+execute_process(
+    COMMAND sh -c "sed -i '' 's/#define bpfCommit   0x0000000000000000/#define bpfCommit   0x${PROJECT_COMMIT}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
     TIMEOUT 3
 )
 
