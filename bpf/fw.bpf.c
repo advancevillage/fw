@@ -7,9 +7,11 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
-#define keySize     0x10
-#define valueSize   0x08
+#define keySize     0x0000000000000010
+#define valueSize   0x0000000000000008
 #define maxEntry    (0x01 << 16) 
+#define bpfTag      0x0000000000000000
+#define bpfCommit   0x0000000000000000
 
 //定义元数据
 //map name:         metadata
@@ -72,7 +74,124 @@ struct bpf_map_def SEC("maps") ipv4_tp_src = {
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
+static __inline void update_meta_info() {
+    //bpf.tag
+    //格式: x.y.z [x=2B y=2B z=4B]
+    char name[0x10];
+    char value[0x08];
+    name[0x00] = 'b';
+    name[0x01] = 'p';
+    name[0x02] = 'f';
+    name[0x03] = '.';
+    name[0x04] = 't';
+    name[0x05] = 'a';
+    name[0x06] = 'g';
+    name[0x07] = 0x00;
+    name[0x08] = 0x00;
+    name[0x09] = 0x00;
+    name[0x0a] = 0x00;
+    name[0x0b] = 0x00;
+    name[0x0c] = 0x00;
+    name[0x0d] = 0x00;
+    name[0x0e] = 0x00;
+    name[0x0f] = 0x00;
+
+    value[0x00] = (unsigned char)(bpfTag >> 56);
+    value[0x01] = (unsigned char)(bpfTag >> 48);
+    value[0x02] = (unsigned char)(bpfTag >> 40);
+    value[0x03] = (unsigned char)(bpfTag >> 32);
+    value[0x04] = (unsigned char)(bpfTag >> 24);
+    value[0x05] = (unsigned char)(bpfTag >> 16);
+    value[0x06] = (unsigned char)(bpfTag >> 8);
+    value[0x07] = (unsigned char)(bpfTag);
+    bpf_map_update_elem(&metadata, name, value);
+
+    name[0x00] = 'b';
+    name[0x01] = 'p';
+    name[0x02] = 'f';
+    name[0x03] = '.';
+    name[0x04] = 'c';
+    name[0x05] = 'o';
+    name[0x06] = 'm';
+    name[0x07] = 'm';
+    name[0x08] = 'i';
+    name[0x09] = 't';
+    name[0x0a] = 0x00;
+    name[0x0b] = 0x00;
+    name[0x0c] = 0x00;
+    name[0x0d] = 0x00;
+    name[0x0e] = 0x00;
+    name[0x0f] = 0x00;
+
+    value[0x00] = (unsigned char)(bpfCommit >> 56);
+    value[0x01] = (unsigned char)(bpfCommit >> 48);
+    value[0x02] = (unsigned char)(bpfCommit >> 40);
+    value[0x03] = (unsigned char)(bpfCommit >> 32);
+    value[0x04] = (unsigned char)(bpfCommit >> 24);
+    value[0x05] = (unsigned char)(bpfCommit >> 16);
+    value[0x06] = (unsigned char)(bpfCommit >> 8);
+    value[0x07] = (unsigned char)(bpfCommit);
+    bpf_map_update_elem(&metadata, name, value);
+
+    name[0x00] = 'b';
+    name[0x01] = 'p';
+    name[0x02] = 'f';
+    name[0x03] = '.';
+    name[0x04] = 'l';
+    name[0x05] = 'p';
+    name[0x06] = 'm';
+    name[0x07] = 'k';
+    name[0x08] = 'e';
+    name[0x09] = 'y';
+    name[0x0a] = 0x00;
+    name[0x0b] = 0x00;
+    name[0x0c] = 0x00;
+    name[0x0d] = 0x00;
+    name[0x0e] = 0x00;
+    name[0x0f] = 0x00;
+
+    value[0x00] = (unsigned char)(keySize >> 56);
+    value[0x01] = (unsigned char)(keySize >> 48);
+    value[0x02] = (unsigned char)(keySize >> 40);
+    value[0x03] = (unsigned char)(keySize >> 32);
+    value[0x04] = (unsigned char)(keySize >> 24);
+    value[0x05] = (unsigned char)(keySize >> 16);
+    value[0x06] = (unsigned char)(keySize >> 8);
+    value[0x07] = (unsigned char)(keySize;
+    bpf_map_update_elem(&metadata, name, value);
+
+    name[0x00] = 'b';
+    name[0x01] = 'p';
+    name[0x02] = 'f';
+    name[0x03] = '.';
+    name[0x04] = 'l';
+    name[0x05] = 'p';
+    name[0x06] = 'm';
+    name[0x07] = 'v';
+    name[0x08] = 'a';
+    name[0x09] = 'l';
+    name[0x0a] = 0x00;
+    name[0x0b] = 0x00;
+    name[0x0c] = 0x00;
+    name[0x0d] = 0x00;
+    name[0x0e] = 0x00;
+    name[0x0f] = 0x00;
+
+    value[0x00] = (unsigned char)(ize >> 56);
+    value[0x01] = (unsigned char)(ize >> 48);
+    value[0x02] = (unsigned char)(ize >> 40);
+    value[0x03] = (unsigned char)(ize >> 32);
+    value[0x04] = (unsigned char)(ize >> 24);
+    value[0x05] = (unsigned char)(ize >> 16);
+    value[0x06] = (unsigned char)(ize >> 8);
+    value[0x07] = (unsigned char)(ize;
+    bpf_map_update_elem(&metadata, name, value);
+
+}
+
 static __inline unsigned char *query_meta_fw_zone() {
+    update_meta_info();
+
     char name[0x10];
     name[0x00] = 'f';
     name[0x01] = 'w';
