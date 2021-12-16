@@ -8,6 +8,11 @@ import (
 	"github.com/advancevillage/fw/pkg/bpf"
 )
 
+var (
+	tag    = uint64(0)
+	commit = uint64(0)
+)
+
 type IMeta interface {
 	UpdateMetaFwZone(ctx context.Context, zone int) error
 }

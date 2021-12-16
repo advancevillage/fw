@@ -1,0 +1,14 @@
+[Unit]
+Description=fw
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/fw/
+ExecStart=/usr/local/fw/bin/fw -c /etc/fw/fw.json
+Restart=always
+RestartSec=5s
+TimeoutSec=15s
+
+[Install]
+WantedBy=multi-user.target
