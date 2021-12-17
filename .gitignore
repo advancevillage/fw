@@ -7,3 +7,5 @@ bpf/*.o
 bin/*
 CPackConfig.cmake
 CPackSourceConfig.cmake
+_build
+build

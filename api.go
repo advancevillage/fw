@@ -36,6 +36,16 @@ type updateFwResponse struct {
 	proto.ActionResponse
 }
 
+type versionRequest struct {
+	proto.ActionRequest
+}
+
+type versionResponse struct {
+	proto.ActionResponse
+	Tag    string `json:"tag"`
+	Commit string `json:"commit"`
+}
+
 func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
 	//1. 解析参数
 	var reply = &proto.ActionResponse{
@@ -79,6 +89,24 @@ func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
 
 		wr.Write(http.StatusOK, response)
 	case "QueryFirewall":
+	case "Version":
+		var (
+			request  = &versionRequest{}
+			response = &versionResponse{}
+		)
+		response.TraceId = reply.GetTraceId()
+
+		err = json.Unmarshal(b, request)
+		if err != nil {
+			response.Code = SrvErr
+			response.Errors = append(response.Errors, &proto.Error{Code: JsonFromatCode, Msg: JsonFormatErr})
+			wr.Write(http.StatusOK, response)
+		} else {
+			response.Code = SrvOk
+			s.version(sctx, response, request)
+		}
+
+		wr.Write(http.StatusOK, response)
 	default:
 		reply.Errors = append(reply.Errors, &proto.Error{Code: NotSupportCode, Msg: NotSupportMsg})
 		wr.Write(http.StatusOK, reply)
@@ -92,4 +120,8 @@ func (s *Srv) updateFirewall(ctx context.Context, response *updateFwResponse, re
 		response.Errors = append(response.Errors, &proto.Error{Code: FwUpdateCode, Msg: FwUpdateMsg})
 		response.Code = SrvErr
 	}
+}
+
+func (s *Srv) version(ctx context.Context, response *versionResponse, request *versionRequest) {
+	response.Tag, response.Commit = s.fwCli.Version()
 }

@@ -27,6 +27,7 @@ import (
 
 type IFwMgr interface {
 	Write(ctx context.Context, version int, rules []*proto.FwRule) error
+	Version() (string, string)
 }
 
 var (
@@ -105,6 +106,11 @@ func NewFwMgr(bml int) (IFwMgr, error) {
 		bml:          bml,
 	}
 	return mgr, nil
+}
+
+func (mgr *fwMgr) Version() (string, string) {
+	tag, commit := mgr.metaTable.Version()
+	return fmt.Sprintf("%d.%d.%d", uint16(tag>>48)&0xffff, uint16(tag>>32)&0xffff, uint32(tag)&0xffffffff), fmt.Sprintf("%x", commit)
 }
 
 func (mgr *fwMgr) Write(ctx context.Context, version int, rules []*proto.FwRule) error {

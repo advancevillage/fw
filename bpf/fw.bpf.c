@@ -11,7 +11,7 @@
 #define valueSize   0x0000000000000008
 #define maxEntry    (0x01 << 16) 
 #define bpfTag      0x0000000000000001
-#define bpfCommit   0xe182abaa5a5eb127
+#define bpfCommit   0xd45895c6cb02b5ba
 
 //定义元数据
 //map name:         metadata
