@@ -41,6 +41,7 @@ execute_process(
 )
 
 ## 流程编排
+if(PROJECT_OS STREQUAL "darwin")
 execute_process(
     COMMAND sh -c "sed -i '' 's/#define bpfTag .*/#define bpfTag      0x${PROJECT_TAG}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
 )
@@ -48,6 +49,16 @@ execute_process(
 execute_process(
     COMMAND sh -c "sed -i '' 's/#define bpfCommit .*/#define bpfCommit   0x${PROJECT_COMMIT}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
 )
+else()
+execute_process(
+    COMMAND sh -c "sed -i 's/#define bpfTag .*/#define bpfTag      0x${PROJECT_TAG}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+
+execute_process(
+    COMMAND sh -c "sed -i 's/#define bpfCommit .*/#define bpfCommit   0x${PROJECT_COMMIT}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+endif()
+
 
 execute_process(
     COMMAND sh -c "rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/bin"
