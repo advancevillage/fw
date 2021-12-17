@@ -11,50 +11,46 @@ set(CMAKE_BUILD_TYPE Release)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/deploy/cmake")
 
-execute_process(
+add_custom_command(
+    OUTPUT commit
     COMMAND sh -c "git rev-parse HEAD | cut -c 1-16"
-    TIMEOUT 3
 	OUTPUT_VARIABLE PROJECT_COMMIT
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-message("commit: " ${PROJECT_COMMIT})
 
-execute_process(
+add_custom_command(
+    OUTPUT tag
     COMMAND sh -c "git describe  --tags --abbrev=0 | sed 's/[[:blank:]]//g' | sed 's/^v//g' | awk -F'.' '{printf \"%04x%04x%08x\", $1,$2,$3}'"
-    TIMEOUT 3
 	OUTPUT_VARIABLE PROJECT_TAG
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-message("tag: " ${PROJECT_TAG})
 
-execute_process(
+add_custom_command(
+    OUTPUT  os
     COMMAND sh -c "uname -s"
-    TIMEOUT 3
 	OUTPUT_VARIABLE PROJECT_OS
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-string(TOLOWER ${PROJECT_OS} PROJECT_OS)
-message("os: " ${PROJECT_OS})
 
-
-execute_process(
+add_custom_command(
+    OUTPUT  bpfTag
     COMMAND sh -c "sed -i '' 's/#define bpfTag      0x0000000000000000/#define bpfTag      0x${PROJECT_TAG}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-    TIMEOUT 3
 )
+add_custom_target(bpfTag DEPENDS tag)
 
-execute_process(
+add_custom_command(
+    OUTPUT bpfCommit
     COMMAND sh -c "sed -i '' 's/#define bpfCommit   0x0000000000000000/#define bpfCommit   0x${PROJECT_COMMIT}/' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-    TIMEOUT 3
 )
+add_custom_target(bpfCommit DEPENDS commit)
 
-execute_process(
+add_custom_command(
+    OUTOUT go
     COMMAND sh -c "mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/bin"
     COMMAND sh -c "CGO_ENABLED=0 GOOS=${PROJECT_OS} GOARCH=amd64 go build -a -ldflags '-X pkg/meta.tag=0x${PROJECT_TAG} -X pkg/meta.commit=0x${PROJECT_COMMIT} -extldflags \"-static\"' -o ${CMAKE_CURRENT_SOURCE_DIR}/bin/${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/cmd/cmd.go"
-    TIMEOUT 20
 )
+add_custom_target(build DEPENDS os bpfTag bpfCommit)
 
-install(DIRECTORY deploy DESTINATION .)
-install(DIRECTORY bin DESTINATION .)
 
 set(CPACK_PACKAGE_NAME                      "${PROJECT_NAME}")
 set(CPACK_PACKAGE_VERSION                   "${PROJECT_TAG}")
