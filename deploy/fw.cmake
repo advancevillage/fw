@@ -8,5 +8,5 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY       "efficient firewall base of ebpf/xdp
 set(CPACK_PACKAGE_CONTACT                   "cugriver@163.com")
 set(CPACK_PACKAGING_INSTALL_PREFIX          "${CMAKE_INSTALL_PREFIX}")
 set(CPACK_SYSTEM_NAME                       "${PROJECT_OS}")
-set(CPACK_RPM_PACKAGE_ARCHITECTURE          "${PROJECT_ARCH}")
+set(CPACK_PACKAGE_FILE_NAME                 "${PROJECT_NAME}-${PROJECT_PKG_TAG}-${PROJECT_ARCH}")
 
