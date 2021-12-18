@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/usr/local/fw/
-ExecStart=/usr/local/fw/bin/fw -c /etc/fw/fw.json
+ExecStart=/usr/local/fw/bin/fw -c /usr/local/fw/conf/fw.json
 Restart=always
 RestartSec=5s
 TimeoutSec=15s
