@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/bash
 
 function systemd_uninstall() {
 	app=$1
