@@ -1,7 +1,12 @@
 #!/usr/bin/bash
 
+APP_ROOT=/usr/local/fw
+SYSTEMD_ROOT=/usr/lib/systemd/system
+
 function systemd_uninstall() {
 	app=$1
+	app_unit=$APP_ROOT/systemd/$app.service
+
 	if systemctl is-active $app.service; then
 		systemctl stop $app.service
 	fi
@@ -10,11 +15,12 @@ function systemd_uninstall() {
 		systemctl disable $app.service
 	fi
 
-	rm -f /usr/lib/systemd/system/$app.service
-	systemctl daemon-reload
+    if -d $APP_ROOT; then 
+	    echo "fw systemd service units are removed."
+	    rm -f $SYSTEMD_ROOT/$app.service
+	    systemctl daemon-reload
+        rm -rf $APP_ROOT
+    fi
 }
 
-if [ $1 -eq 0 ] ; then
-	echo "fw systemd service units are removed."
-	systemd_uninstall fw
-fi
+systemd_uninstall fw
