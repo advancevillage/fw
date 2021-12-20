@@ -41,18 +41,6 @@ execute_process(
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-execute_process(
-    COMMAND sh -c "which dpkg"
-	OUTPUT_VARIABLE DEB_PKG
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-execute_process(
-    COMMAND sh -c "which rpm"
-	OUTPUT_VARIABLE RPM_PKG
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 ## 流程编排
 if(PROJECT_OS STREQUAL "darwin")
 execute_process(
@@ -83,9 +71,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/deploy/${PROJECT_NAME}.cmake)
 
 if(PROJECT_OS STREQUAL "darwin")
     include(${CMAKE_CURRENT_SOURCE_DIR}/deploy/tgz/tgz.cmake)
-elseif(EXISTS DEB_PKG)
+elseif(EXISTS "/etc/apt")
     include(${CMAKE_CURRENT_SOURCE_DIR}/deploy/deb/deb.cmake)
-elseif(EXISTS RPM_PKG)
+elseif(EXISTS "/etc/yum")
     include(${CMAKE_CURRENT_SOURCE_DIR}/deploy/rpm/rpm.cmake)
 else()
     message("don't support os")
