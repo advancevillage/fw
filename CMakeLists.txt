@@ -23,7 +23,7 @@ execute_process(
 
 execute_process(
     COMMAND sh -c "git describe  --tags --abbrev=0 | sed 's/[[:blank:]]//g'"
-    COMMAND sh -c "git describe  --tags --abbrev=0 | sed 's/[[:blank:]]//g' | sed 's/^v//g' | awk -F'.' '{printf \"%d:%d-%d\", $1,$2,$3}'"
+    COMMAND sh -c "git describe  --tags --abbrev=0 | sed 's/[[:blank:]]//g' | sed 's/^v//g' | awk -F'.' '{printf \"%d.%d.%d-%d\", $1,$2,$3,$4}'"
 	OUTPUT_VARIABLE PROJECT_PKG_TAG OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
