@@ -104,7 +104,7 @@ static __inline void update_meta_info() {
     value[0x05] = (unsigned char)(bpfTag >> 16);
     value[0x06] = (unsigned char)(bpfTag >> 8);
     value[0x07] = (unsigned char)(bpfTag);
-    bpf_map_update_elem(&metadata, name, value);
+    bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
     name[0x01] = 'p';
@@ -131,7 +131,7 @@ static __inline void update_meta_info() {
     value[0x05] = (unsigned char)(bpfCommit >> 16);
     value[0x06] = (unsigned char)(bpfCommit >> 8);
     value[0x07] = (unsigned char)(bpfCommit);
-    bpf_map_update_elem(&metadata, name, value);
+    bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
     name[0x01] = 'p';
@@ -157,8 +157,8 @@ static __inline void update_meta_info() {
     value[0x04] = (unsigned char)(keySize >> 24);
     value[0x05] = (unsigned char)(keySize >> 16);
     value[0x06] = (unsigned char)(keySize >> 8);
-    value[0x07] = (unsigned char)(keySize;
-    bpf_map_update_elem(&metadata, name, value);
+    value[0x07] = (unsigned char)(keySize);
+    bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
     name[0x01] = 'p';
@@ -177,16 +177,15 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(ize >> 56);
-    value[0x01] = (unsigned char)(ize >> 48);
-    value[0x02] = (unsigned char)(ize >> 40);
-    value[0x03] = (unsigned char)(ize >> 32);
-    value[0x04] = (unsigned char)(ize >> 24);
-    value[0x05] = (unsigned char)(ize >> 16);
-    value[0x06] = (unsigned char)(ize >> 8);
-    value[0x07] = (unsigned char)(ize;
-    bpf_map_update_elem(&metadata, name, value);
-
+    value[0x00] = (unsigned char)(keySize >> 56);
+    value[0x01] = (unsigned char)(keySize >> 48);
+    value[0x02] = (unsigned char)(keySize >> 40);
+    value[0x03] = (unsigned char)(keySize >> 32);
+    value[0x04] = (unsigned char)(keySize >> 24);
+    value[0x05] = (unsigned char)(keySize >> 16);
+    value[0x06] = (unsigned char)(keySize >> 8);
+    value[0x07] = (unsigned char)(keySize);
+    bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 }
 
 static __inline unsigned char *query_meta_fw_zone() {
@@ -210,9 +209,6 @@ static __inline unsigned char *query_meta_fw_zone() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
     unsigned char *zone = (unsigned char*)bpf_map_lookup_elem(&metadata, name);
-    if (!zone) {
-        return NULL;
-    }
     return zone;
 }
 
@@ -236,9 +232,6 @@ static __inline unsigned char* query_fw_proto_bits(unsigned char *zone, __u8 pro
     kk[0x0f] = proto;
     
     unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_proto, kk);
-    if (!bits) {
-        return NULL;
-    }
     return bits;
 }
 
@@ -288,9 +281,6 @@ static __inline unsigned char* query_fw_nw_dst_bits(unsigned char *zone, __be32 
     kk[0x0f] = (unsigned char)(dst_ip >> 24);
     
     unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_nw_dst, kk);
-    if (!bits) {
-        return NULL;
-    }
     return bits;
 }
 
@@ -314,9 +304,6 @@ static __inline unsigned char* query_fw_tp_src_bits(unsigned char *zone, __be16 
     kk[0x0f] = (unsigned char)(src_port >> 8);
     
     unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_tp_src, kk);
-    if (!bits) {
-        return NULL;
-    }
     return bits;
 }
 
@@ -340,9 +327,6 @@ static __inline unsigned char* query_fw_tp_dst_bits(unsigned char *zone, __be16 
     kk[0x0f] = (unsigned char)(dst_port >> 8);
     
     unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_tp_dst, kk);
-    if (!bits) {
-        return NULL;
-    }
     return bits;
 }
 
@@ -366,9 +350,6 @@ static __inline unsigned char* query_fw_action_bits(unsigned char *zone, __u8 op
     kk[0x0f] = op;
     
     unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_action, kk);
-    if (!bits) {
-        return NULL;
-    }
     return bits;
 }
 

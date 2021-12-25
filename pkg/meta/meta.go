@@ -33,6 +33,8 @@ var (
 	fwcommit  = []byte("fw.commit")
 	bpftag    = []byte("bpf.tag")
 	bpfcommit = []byte("bpf.commit")
+	bpflpmkey = []byte("bpf.lpmkey")
+	bpflpmval = []byte("bpf.lpmval")
 
 	keySize   = int(0x10)
 	valueSize = int(0x08)
@@ -183,6 +185,8 @@ func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
 		fwcmitk  = make([]byte, i.valueSize)
 		bpftagk  = make([]byte, i.keySize)
 		bpfcmitk = make([]byte, i.keySize)
+		bpflpmkk = make([]byte, i.keySize)
+		bpflpmvk = make([]byte, i.keySize)
 	)
 	copy(fwzonek, fwzone)
 	copy(fwtsk, fwts)
@@ -190,6 +194,8 @@ func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
 	copy(fwcmitk, fwcommit)
 	copy(bpftagk, bpftag)
 	copy(bpfcmitk, bpfcommit)
+	copy(bpflpmkk, bpflpmkey)
+	copy(bpflpmvk, bpflpmvk)
 
 	for i := range kv {
 		var (
@@ -209,6 +215,10 @@ func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
 			table.Meta[string(bpftag)] = hex.EncodeToString(vv)
 		case bytes.Equal(kk, bpfcmitk):
 			table.Meta[string(bpfcommit)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, bpflpmkk):
+			table.Meta[string(bpflpmkey)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, bpflpmvk):
+			table.Meta[string(bpflpmval)] = hex.EncodeToString(vv)
 		}
 	}
 	return nil
