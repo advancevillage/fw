@@ -19,6 +19,21 @@ message bpfFwRule {
     uint32 action       = 10;
 }
 
+message bpfTable {
+    map<string, string> meta = 1;
+    map<string, string> protocol = 2;
+    map<string, string> srcIp = 3;
+    map<string, string> dstIp = 4;
+    map<string, string> srcPort = 5;
+    map<string, string> dstPort = 6;
+    map<string, string> action = 7;
+}
+
+message version {
+   uint64 tag = 1;
+   uint64 commit = 2;
+}
+
 
 message FwRule {
     //eg: TCP UDP ICMP GRE

@@ -1,7 +1,9 @@
 package meta
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/advancevillage/fw/pkg/bpf"
+	"github.com/advancevillage/fw/proto"
 )
 
 var (
@@ -17,17 +20,19 @@ var (
 )
 
 type IMeta interface {
-	UpdateMetaFwZone(ctx context.Context, zone int) error
-	Version() (uint64, uint64)
+	UpdateZone(ctx context.Context, zone int) error
+	QueryMeta(ctx context.Context, table *proto.BpfTable) error
 }
 
 var (
 	//内核态创建.用户态负责查询和更新
-	name     = "metadata"
-	fwzone   = []byte("fw.zone")
-	fwts     = []byte("fw.ts")
-	fwtag    = []byte("fw.tag")
-	fwcommit = []byte("fw.commit")
+	name      = "metadata"
+	fwzone    = []byte("fw.zone")
+	fwts      = []byte("fw.ts")
+	fwtag     = []byte("fw.tag")
+	fwcommit  = []byte("fw.commit")
+	bpftag    = []byte("bpf.tag")
+	bpfcommit = []byte("bpf.commit")
 
 	keySize   = int(0x10)
 	valueSize = int(0x08)
@@ -52,7 +57,7 @@ func NewMetadata() (IMeta, error) {
 	}, nil
 }
 
-func (i *metadata) UpdateMetaFwZone(ctx context.Context, zone int) error {
+func (i *metadata) UpdateZone(ctx context.Context, zone int) error {
 	i.meta(ctx)
 
 	var kk = make([]byte, i.keySize)
@@ -71,10 +76,6 @@ func (i *metadata) UpdateMetaFwZone(ctx context.Context, zone int) error {
 		return err
 	}
 	return nil
-}
-
-func (i *metadata) Version() (uint64, uint64) {
-	return i.ver()
 }
 
 func (i *metadata) ver() (uint64, uint64) {
@@ -159,6 +160,56 @@ func (i *metadata) update(ctx context.Context, key []byte, value []byte) error {
 	err = i.tableCli.UpdateTable(ctx, key, value)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
+	if i.tableCli == nil {
+		return nil
+	}
+	if !i.tableCli.ExistTable(ctx) {
+		return nil
+	}
+	var kv, err = i.tableCli.QueryTable(ctx)
+	if err != nil {
+		return err
+	}
+
+	var (
+		fwzonek  = make([]byte, i.keySize)
+		fwtsk    = make([]byte, i.keySize)
+		fwtagk   = make([]byte, i.keySize)
+		fwcmitk  = make([]byte, i.valueSize)
+		bpftagk  = make([]byte, i.keySize)
+		bpfcmitk = make([]byte, i.keySize)
+	)
+	copy(fwzonek, fwzone)
+	copy(fwtsk, fwts)
+	copy(fwtagk, fwtag)
+	copy(fwcmitk, fwcommit)
+	copy(bpftagk, bpftag)
+	copy(bpfcmitk, bpfcommit)
+
+	for i := range kv {
+		var (
+			kk = kv[i].Key
+			vv = kv[i].Value
+		)
+		switch {
+		case bytes.Equal(kk, fwzonek):
+			table.Meta[string(fwzone)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, fwtsk):
+			table.Meta[string(fwts)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, fwtagk):
+			table.Meta[string(fwtag)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, fwcmitk):
+			table.Meta[string(fwcommit)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, bpftagk):
+			table.Meta[string(bpftag)] = hex.EncodeToString(vv)
+		case bytes.Equal(kk, bpfcmitk):
+			table.Meta[string(bpfcommit)] = hex.EncodeToString(vv)
+		}
 	}
 	return nil
 }

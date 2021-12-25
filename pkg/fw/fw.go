@@ -2,6 +2,7 @@ package fw
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -26,8 +27,8 @@ import (
 //				 key
 
 type IFwMgr interface {
+	Read(ctx context.Context, table *proto.BpfTable) error
 	Write(ctx context.Context, version int, rules []*proto.FwRule) error
-	Version() (string, string)
 }
 
 var (
@@ -108,9 +109,18 @@ func NewFwMgr(bml int) (IFwMgr, error) {
 	return mgr, nil
 }
 
-func (mgr *fwMgr) Version() (string, string) {
-	tag, commit := mgr.metaTable.Version()
-	return fmt.Sprintf("%d.%d.%d", uint16(tag>>48)&0xffff, uint16(tag>>32)&0xffff, uint32(tag)&0xffffffff), fmt.Sprintf("%x", commit)
+func (mgr *fwMgr) Read(ctx context.Context, table *proto.BpfTable) error {
+	//1. 解析元数据
+	err := mgr.metaTable.QueryMeta(ctx, table)
+	if err != nil {
+		return err
+	}
+	//1.解析协议
+	table.Protocol, err = mgr.readU8Table(ctx, mgr.protoTable)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (mgr *fwMgr) Write(ctx context.Context, version int, rules []*proto.FwRule) error {
@@ -149,7 +159,7 @@ func (mgr *fwMgr) Write(ctx context.Context, version int, rules []*proto.FwRule)
 	if err != nil {
 		return err
 	}
-	err = mgr.metaTable.UpdateMetaFwZone(ctx, version)
+	err = mgr.metaTable.UpdateZone(ctx, version)
 	if err != nil {
 		return err
 	}
@@ -196,6 +206,32 @@ func (mgr *fwMgr) writeU8Table(ctx context.Context, tableCli bpf.ITable, table m
 		}
 	}
 	return nil
+}
+
+func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable) (map[string]string, error) {
+	var r = make(map[string]string)
+	if tableCli == nil {
+		return r, nil
+	}
+	if !tableCli.ExistTable(ctx) {
+		return r, nil
+	}
+	var kv, err = tableCli.QueryTable(ctx)
+	if err != nil {
+		return r, err
+	}
+	for i := range kv {
+		var (
+			kk    = kv[i].Key
+			vv    = kv[i].Value
+			mask  uint8
+			proto uint8
+		)
+		mask = kk[0] - 0x08*0x0b
+		proto = kk[0x0f]
+		r[rule.ProtoMaskEncode(&rule.ProtoMask{Proto: proto, Mask: mask})] = hex.EncodeToString(vv)
+	}
+	return r, nil
 }
 
 func (mgr *fwMgr) writeU32Table(ctx context.Context, tableCli bpf.ITable, table map[string]rule.IBitmap, zone int) error {

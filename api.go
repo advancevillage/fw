@@ -15,11 +15,13 @@ var (
 	JsonFromatCode      = uint32(1100)
 	NotSupportCode      = uint32(1101)
 	FwUpdateCode        = uint32(1200)
+	FwQueryCode         = uint32(1201)
 
 	HttpRequestBodyErr = "read request body error"
 	JsonFormatErr      = "json format error"
 	NotSupportMsg      = "not support action error"
 	FwUpdateMsg        = "update firewall error"
+	FwQueryMsg         = "queryfirewall error"
 
 	SrvOk  = uint32(http.StatusOK)
 	SrvErr = uint32(http.StatusInternalServerError)
@@ -34,6 +36,15 @@ type updateFwRequest struct {
 
 type updateFwResponse struct {
 	proto.ActionResponse
+}
+
+type queryFwRequest struct {
+	proto.ActionRequest
+}
+
+type queryFwResponse struct {
+	proto.ActionResponse
+	proto.BpfTable
 }
 
 type versionRequest struct {
@@ -89,10 +100,9 @@ func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
 
 		wr.Write(http.StatusOK, response)
 	case "QueryFirewall":
-	case "Version":
 		var (
-			request  = &versionRequest{}
-			response = &versionResponse{}
+			request  = &queryFwRequest{}
+			response = &queryFwResponse{}
 		)
 		response.TraceId = reply.GetTraceId()
 
@@ -103,7 +113,7 @@ func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
 			wr.Write(http.StatusOK, response)
 		} else {
 			response.Code = SrvOk
-			s.version(sctx, response, request)
+			s.queryFirewall(sctx, response, request)
 		}
 
 		wr.Write(http.StatusOK, response)
@@ -122,6 +132,11 @@ func (s *Srv) updateFirewall(ctx context.Context, response *updateFwResponse, re
 	}
 }
 
-func (s *Srv) version(ctx context.Context, response *versionResponse, request *versionRequest) {
-	response.Tag, response.Commit = s.fwCli.Version()
+func (s *Srv) queryFirewall(ctx context.Context, response *queryFwResponse, request *queryFwRequest) {
+	var err = s.fwCli.Read(ctx, &response.BpfTable)
+	if err != nil {
+		s.logger.Errorw(ctx, "query firewall fail", "err", err)
+		response.Errors = append(response.Errors, &proto.Error{Code: FwQueryCode, Msg: FwQueryMsg})
+		response.Code = SrvErr
+	}
 }
