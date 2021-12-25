@@ -77,8 +77,12 @@ struct bpf_map_def SEC("maps") ipv4_tp_src = {
 static __inline void update_meta_info() {
     //bpf.tag
     //格式: x.y.z [x=2B y=2B z=4B]
-    char name[0x10];
-    char value[0x08];
+    char    name[0x10];
+    char    value[0x08];
+    __be64  tag     = bpfTag;
+    __be64  commit  = bpfCommit;
+    __be64  size    = keySize;
+    
     name[0x00] = 'b';
     name[0x01] = 'p';
     name[0x02] = 'f';
@@ -96,14 +100,14 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(bpfTag >> 56);
-    value[0x01] = (unsigned char)(bpfTag >> 48);
-    value[0x02] = (unsigned char)(bpfTag >> 40);
-    value[0x03] = (unsigned char)(bpfTag >> 32);
-    value[0x04] = (unsigned char)(bpfTag >> 24);
-    value[0x05] = (unsigned char)(bpfTag >> 16);
-    value[0x06] = (unsigned char)(bpfTag >> 8);
-    value[0x07] = (unsigned char)(bpfTag);
+    value[0x00] = (unsigned char)(tag >> 56);
+    value[0x01] = (unsigned char)(tag >> 48);
+    value[0x02] = (unsigned char)(tag >> 40);
+    value[0x03] = (unsigned char)(tag >> 32);
+    value[0x04] = (unsigned char)(tag >> 24);
+    value[0x05] = (unsigned char)(tag >> 16);
+    value[0x06] = (unsigned char)(tag >> 8);
+    value[0x07] = (unsigned char)(tag);
     bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
@@ -123,14 +127,14 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(bpfCommit >> 56);
-    value[0x01] = (unsigned char)(bpfCommit >> 48);
-    value[0x02] = (unsigned char)(bpfCommit >> 40);
-    value[0x03] = (unsigned char)(bpfCommit >> 32);
-    value[0x04] = (unsigned char)(bpfCommit >> 24);
-    value[0x05] = (unsigned char)(bpfCommit >> 16);
-    value[0x06] = (unsigned char)(bpfCommit >> 8);
-    value[0x07] = (unsigned char)(bpfCommit);
+    value[0x00] = (unsigned char)(commit >> 56);
+    value[0x01] = (unsigned char)(commit >> 48);
+    value[0x02] = (unsigned char)(commit >> 40);
+    value[0x03] = (unsigned char)(commit >> 32);
+    value[0x04] = (unsigned char)(commit >> 24);
+    value[0x05] = (unsigned char)(commit >> 16);
+    value[0x06] = (unsigned char)(commit >> 8);
+    value[0x07] = (unsigned char)(commit);
     bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
@@ -150,14 +154,14 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(keySize >> 56);
-    value[0x01] = (unsigned char)(keySize >> 48);
-    value[0x02] = (unsigned char)(keySize >> 40);
-    value[0x03] = (unsigned char)(keySize >> 32);
-    value[0x04] = (unsigned char)(keySize >> 24);
-    value[0x05] = (unsigned char)(keySize >> 16);
-    value[0x06] = (unsigned char)(keySize >> 8);
-    value[0x07] = (unsigned char)(keySize);
+    value[0x00] = (unsigned char)(size >> 56);
+    value[0x01] = (unsigned char)(size >> 48);
+    value[0x02] = (unsigned char)(size >> 40);
+    value[0x03] = (unsigned char)(size >> 32);
+    value[0x04] = (unsigned char)(size >> 24);
+    value[0x05] = (unsigned char)(size >> 16);
+    value[0x06] = (unsigned char)(size >> 8);
+    value[0x07] = (unsigned char)(size);
     bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
@@ -177,14 +181,14 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(keySize >> 56);
-    value[0x01] = (unsigned char)(keySize >> 48);
-    value[0x02] = (unsigned char)(keySize >> 40);
-    value[0x03] = (unsigned char)(keySize >> 32);
-    value[0x04] = (unsigned char)(keySize >> 24);
-    value[0x05] = (unsigned char)(keySize >> 16);
-    value[0x06] = (unsigned char)(keySize >> 8);
-    value[0x07] = (unsigned char)(keySize);
+    value[0x00] = (unsigned char)(size >> 56);
+    value[0x01] = (unsigned char)(size >> 48);
+    value[0x02] = (unsigned char)(size >> 40);
+    value[0x03] = (unsigned char)(size >> 32);
+    value[0x04] = (unsigned char)(size >> 24);
+    value[0x05] = (unsigned char)(size >> 16);
+    value[0x06] = (unsigned char)(size >> 8);
+    value[0x07] = (unsigned char)(size);
     bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 }
 
@@ -255,9 +259,6 @@ static __inline unsigned char* query_fw_nw_src_bits(unsigned char *zone, __be32 
     kk[0x0f] = (unsigned char)(src_ip >> 24);
     
     unsigned char *bits = (unsigned char*)bpf_map_lookup_elem(&ipv4_nw_src, kk);
-    if (!bits) {
-        return NULL;
-    }
     return bits;
 }
 
