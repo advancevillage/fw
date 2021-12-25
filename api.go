@@ -47,16 +47,6 @@ type queryFwResponse struct {
 	proto.BpfTable
 }
 
-type versionRequest struct {
-	proto.ActionRequest
-}
-
-type versionResponse struct {
-	proto.ActionResponse
-	Tag    string `json:"tag"`
-	Commit string `json:"commit"`
-}
-
 func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
 	//1. 解析参数
 	var reply = &proto.ActionResponse{

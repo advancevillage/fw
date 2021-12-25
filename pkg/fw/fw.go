@@ -111,6 +111,12 @@ func NewFwMgr(bml int) (IFwMgr, error) {
 
 func (mgr *fwMgr) Read(ctx context.Context, table *proto.BpfTable) error {
 	//1. 解析元数据
+	if table.Meta == nil {
+		table.Meta = make(map[string]string)
+	}
+	if table.Protocol == nil {
+		table.Protocol = make(map[string]string)
+	}
 	err := mgr.metaTable.QueryMeta(ctx, table)
 	if err != nil {
 		return err
