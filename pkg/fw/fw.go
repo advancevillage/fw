@@ -341,7 +341,7 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable) (map[st
 			mask uint8
 		)
 		mask = kk[0] - 0x08*0x08
-		r[fmt.Sprintf("%d.%d.%d.%d/%d", vv[0x0c], vv[0x0d], vv[0x0e], vv[0x0f], mask)] = hex.EncodeToString(vv)
+		r[fmt.Sprintf("%d.%d.%d.%d/%d", kk[0x0c], kk[0x0d], kk[0x0e], kk[0x0f], mask)] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
@@ -408,9 +408,9 @@ func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable) (map[st
 			port uint16
 		)
 		mask = kk[0] - 0x08*0x0a
-		port = uint16(vv[0x0e]) << 8
-		port |= uint16(vv[0x0f])
-		r[fmt.Sprintf("0x%x/%d", port, mask)] = hex.EncodeToString(vv)
+		port = uint16(kk[0x0e]) << 8
+		port |= uint16(kk[0x0f])
+		r[fmt.Sprintf("%d/%d", port, mask)] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
