@@ -82,16 +82,6 @@ func newPortMask(min, max int) ([]*PortMask, error) {
 	if min < 0x00 || max > 0xffff || min > max {
 		return nil, errors.New("invalid min max params")
 	}
-	//特殊处理
-	//eg: min = 0 max = 0  理论值 0/16
-	//处理:
-	//eg: min = 0 max = 0  实际值 0/0
-	//结果:
-	//减少规则数量, 提高效率
-	if min == 0 && max == 0 {
-		r = append(r, &PortMask{Port: 0x0000, Mask: 0})
-		return r, nil
-	}
 
 	for v := min; v <= max; {
 		probe := 0x01                      //探测指针

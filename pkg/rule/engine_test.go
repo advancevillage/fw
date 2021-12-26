@@ -27,22 +27,23 @@ var testEngine = map[string]struct {
 		},
 		lbvs: &LBVS{
 			Protocol: map[string]IBitmap{
-				ProtoMaskEncode(&ProtoMask{Proto: number["tcp"], Mask: 0x08}): via(0),
+				ProtoMaskEncode(&ProtoMask{Proto: number["tcp"], Mask: 0x08}): via(0, 1),
 			},
 			SrcIp: map[string]IBitmap{
-				IpMaskEncode(&IpMask{Ip: 0, Mask: 0}): via(0),
+				IpMaskEncode(&IpMask{Ip: 0, Mask: 0}): via(0, 1),
 			},
 			SrcPort: map[string]IBitmap{
-				PortMaskEncode(&PortMask{Port: 0, Mask: 0}): via(0),
+				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 1}): via(0),
+				PortMaskEncode(&PortMask{Port: 0x8000, Mask: 1}): via(1),
 			},
 			DstIp: map[string]IBitmap{
-				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0),
+				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1),
 			},
 			DstPort: map[string]IBitmap{
-				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0),
+				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}): via(0, 1),
 			},
 			Action: map[string]IBitmap{
-				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0, 1),
 			},
 		},
 	},
@@ -324,26 +325,28 @@ var testEngine = map[string]struct {
 		},
 		lbvs: &LBVS{
 			Protocol: map[string]IBitmap{
-				ProtoMaskEncode(&ProtoMask{Proto: number["udp"], Mask: 0x08}): via(1),
-				ProtoMaskEncode(&ProtoMask{Proto: number["tcp"], Mask: 0x08}): via(0, 2),
+				ProtoMaskEncode(&ProtoMask{Proto: number["udp"], Mask: 0x08}): via(4, 5, 6, 7),
+				ProtoMaskEncode(&ProtoMask{Proto: number["tcp"], Mask: 0x08}): via(0, 1, 2, 3, 8, 9),
 			},
 			SrcIp: map[string]IBitmap{
-				IpMaskEncode(&IpMask{Ip: 0xc0a83800, Mask: 0x18}): via(0, 1, 2),
-				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2),
+				IpMaskEncode(&IpMask{Ip: 0xc0a83800, Mask: 0x18}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
 			},
 			SrcPort: map[string]IBitmap{
-				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): via(0, 1, 2),
+				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x01}): via(0, 1, 4, 5, 8),
+				PortMaskEncode(&PortMask{Port: 0x8000, Mask: 0x01}): via(2, 3, 6, 7, 9),
 			},
 			DstIp: map[string]IBitmap{
-				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2),
-				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2),
+				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
 			},
 			DstPort: map[string]IBitmap{
-				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x00}): via(0, 1, 2),
-				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}):   via(0, 1, 2),
+				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x01}): via(0, 2, 4, 6, 8, 9),
+				PortMaskEncode(&PortMask{Port: 0x8000, Mask: 0x01}): via(1, 3, 5, 7),
+				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}):   via(0, 2, 4, 6, 8, 9),
 			},
 			Action: map[string]IBitmap{
-				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0, 1, 2),
+				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
 			},
 		},
 	},

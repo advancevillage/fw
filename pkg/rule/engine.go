@@ -45,6 +45,13 @@ var (
 		ACCEPT: 0x01,
 		DROP:   0x00,
 	}
+
+	l3 = map[string]string{ //默认端口掩码
+		ICMP: "0",
+		GRE:  "0",
+		TCP:  "0-65535",
+		UDP:  "0-65535",
+	}
 )
 
 type EngineOption func(*engine)
@@ -83,10 +90,12 @@ func (e *engine) parse(rules []*proto.FwRule) ([]*proto.BpfFwRule, error) {
 	}
 
 	for _, v := range rules {
-		if _, ok := number[strings.ToLower(v.GetProtocol())]; !ok {
+		v.Protocol = strings.ToLower(v.GetProtocol())
+		v.Action = strings.ToLower(v.GetAction())
+		if _, ok := number[v.GetProtocol()]; !ok {
 			return nil, fmt.Errorf("don't support %s protocol", v.GetProtocol())
 		}
-		if _, ok := op[strings.ToLower(v.GetAction())]; !ok {
+		if _, ok := op[v.GetAction()]; !ok {
 			return nil, fmt.Errorf("don't support %s action", v.GetAction())
 		}
 		var r, err = e.generate(v)
@@ -110,9 +119,10 @@ func (e *engine) generate(rule *proto.FwRule) ([]*proto.BpfFwRule, error) {
 		dstPortMin int
 		dstPortMax int
 
-		err error
-		a   int
-		b   int
+		ports []string
+		err   error
+		a     int
+		b     int
 	)
 	if len(rule.GetSrcIp()) <= 0 {
 		rule.SrcIp = "0.0.0.0/0"
@@ -121,78 +131,74 @@ func (e *engine) generate(rule *proto.FwRule) ([]*proto.BpfFwRule, error) {
 		rule.DstIp = "0.0.0.0/0"
 	}
 	if len(rule.GetSrcPort()) <= 0 {
-		rule.SrcPort = "0"
-		srcPortMin = 0
-		srcPortMax = 0
-	} else {
-		var ports = strings.Split(rule.GetSrcPort(), "-")
-		switch {
-		case len(ports) == 1:
-			a, err = strconv.Atoi(ports[0])
-			if err != nil {
-				return nil, err
-			}
-			srcPortMin = a
-			srcPortMax = a
-		case len(ports) == 2:
-			a, err = strconv.Atoi(ports[0])
-			if err != nil {
-				return nil, err
-			}
-			b, err = strconv.Atoi(ports[1])
-			if err != nil {
-				return nil, err
-			}
-			if a > b {
-				return nil, fmt.Errorf("don't support %s format", rule.GetSrcPort())
-			}
-			if a == 1 && b == 65535 {
-				srcPortMin = 0
-				srcPortMax = 0
-			} else {
-				srcPortMin = a
-				srcPortMax = b
-			}
-		default:
-			return nil, fmt.Errorf("don't support %s format", rule.GetSrcPort())
-		}
+		rule.SrcPort = l3[rule.GetProtocol()]
 	}
 	if len(rule.GetDstPort()) <= 0 {
-		rule.DstPort = "0"
-		dstPortMin = 0
-		dstPortMax = 0
-	} else {
-		var ports = strings.Split(rule.GetDstPort(), "-")
-		switch {
-		case len(ports) == 1:
-			a, err = strconv.Atoi(ports[0])
-			if err != nil {
-				return nil, err
-			}
-			dstPortMin = a
-			dstPortMax = a
-		case len(ports) == 2:
-			a, err = strconv.Atoi(ports[0])
-			if err != nil {
-				return nil, err
-			}
-			b, err = strconv.Atoi(ports[1])
-			if err != nil {
-				return nil, err
-			}
-			if a > b {
-				return nil, fmt.Errorf("don't support %s format", rule.GetDstPort())
-			}
-			if a == 1 && b == 65535 {
-				dstPortMin = 0
-				dstPortMax = 0
-			} else {
-				dstPortMin = a
-				dstPortMax = b
-			}
-		default:
+		rule.DstPort = l3[rule.GetProtocol()]
+	}
+	//解析源端口
+	ports = strings.Split(rule.GetSrcPort(), "-")
+	switch {
+	case len(ports) == 1:
+		a, err = strconv.Atoi(ports[0])
+		if err != nil {
+			return nil, err
+		}
+		srcPortMin = a
+		srcPortMax = a
+	case len(ports) == 2:
+		a, err = strconv.Atoi(ports[0])
+		if err != nil {
+			return nil, err
+		}
+		b, err = strconv.Atoi(ports[1])
+		if err != nil {
+			return nil, err
+		}
+		if a > b {
+			return nil, fmt.Errorf("don't support %s format", rule.GetSrcPort())
+		}
+		if a <= 1 && b >= 65535 {
+			srcPortMin = 0
+			srcPortMax = 65535
+		} else {
+			srcPortMin = a
+			srcPortMax = b
+		}
+	default:
+		return nil, fmt.Errorf("don't support %s format", rule.GetSrcPort())
+	}
+	//解析目的端口
+	ports = strings.Split(rule.GetDstPort(), "-")
+	switch {
+	case len(ports) == 1:
+		a, err = strconv.Atoi(ports[0])
+		if err != nil {
+			return nil, err
+		}
+		dstPortMin = a
+		dstPortMax = a
+	case len(ports) == 2:
+		a, err = strconv.Atoi(ports[0])
+		if err != nil {
+			return nil, err
+		}
+		b, err = strconv.Atoi(ports[1])
+		if err != nil {
+			return nil, err
+		}
+		if a > b {
 			return nil, fmt.Errorf("don't support %s format", rule.GetDstPort())
 		}
+		if a <= 1 && b >= 65535 {
+			dstPortMin = 0
+			dstPortMax = 65535
+		} else {
+			dstPortMin = a
+			dstPortMax = b
+		}
+	default:
+		return nil, fmt.Errorf("don't support %s format", rule.GetDstPort())
 	}
 
 	var (
