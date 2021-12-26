@@ -275,7 +275,7 @@ func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable) (map[str
 		)
 		mask = kk[0] - 0x08*0x0b
 		proto = kk[0x0f]
-		r[fmt.Sprintf("0x%x/%d", proto, mask)] = hex.EncodeToString(vv)
+		r[fmt.Sprintf("%d", proto&(0xff<<(0x08-mask)))] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
