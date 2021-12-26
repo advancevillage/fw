@@ -182,7 +182,7 @@ func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
 		fwzonek  = make([]byte, i.keySize)
 		fwtsk    = make([]byte, i.keySize)
 		fwtagk   = make([]byte, i.keySize)
-		fwcmitk  = make([]byte, i.valueSize)
+		fwcmitk  = make([]byte, i.keySize)
 		bpftagk  = make([]byte, i.keySize)
 		bpfcmitk = make([]byte, i.keySize)
 		bpflpmkk = make([]byte, i.keySize)
@@ -195,7 +195,7 @@ func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
 	copy(bpftagk, bpftag)
 	copy(bpfcmitk, bpfcommit)
 	copy(bpflpmkk, bpflpmkey)
-	copy(bpflpmvk, bpflpmvk)
+	copy(bpflpmvk, bpflpmval)
 
 	for i := range kv {
 		var (
