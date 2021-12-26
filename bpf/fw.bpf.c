@@ -81,7 +81,8 @@ static __inline void update_meta_info() {
     char    value[0x08];
     __be64  tag     = bpfTag;
     __be64  commit  = bpfCommit;
-    __be64  size    = keySize;
+    __be64  ksize   = keySize;
+    __be64  vsize   = valueSize;
     
     name[0x00] = 'b';
     name[0x01] = 'p';
@@ -154,14 +155,14 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(size >> 56);
-    value[0x01] = (unsigned char)(size >> 48);
-    value[0x02] = (unsigned char)(size >> 40);
-    value[0x03] = (unsigned char)(size >> 32);
-    value[0x04] = (unsigned char)(size >> 24);
-    value[0x05] = (unsigned char)(size >> 16);
-    value[0x06] = (unsigned char)(size >> 8);
-    value[0x07] = (unsigned char)(size);
+    value[0x00] = (unsigned char)(ksize >> 56);
+    value[0x01] = (unsigned char)(ksize >> 48);
+    value[0x02] = (unsigned char)(ksize >> 40);
+    value[0x03] = (unsigned char)(ksize >> 32);
+    value[0x04] = (unsigned char)(ksize >> 24);
+    value[0x05] = (unsigned char)(ksize >> 16);
+    value[0x06] = (unsigned char)(ksize >> 8);
+    value[0x07] = (unsigned char)(ksize);
     bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 
     name[0x00] = 'b';
@@ -181,14 +182,14 @@ static __inline void update_meta_info() {
     name[0x0e] = 0x00;
     name[0x0f] = 0x00;
 
-    value[0x00] = (unsigned char)(size >> 56);
-    value[0x01] = (unsigned char)(size >> 48);
-    value[0x02] = (unsigned char)(size >> 40);
-    value[0x03] = (unsigned char)(size >> 32);
-    value[0x04] = (unsigned char)(size >> 24);
-    value[0x05] = (unsigned char)(size >> 16);
-    value[0x06] = (unsigned char)(size >> 8);
-    value[0x07] = (unsigned char)(size);
+    value[0x00] = (unsigned char)(vsize >> 56);
+    value[0x01] = (unsigned char)(vsize >> 48);
+    value[0x02] = (unsigned char)(vsize >> 40);
+    value[0x03] = (unsigned char)(vsize >> 32);
+    value[0x04] = (unsigned char)(vsize >> 24);
+    value[0x05] = (unsigned char)(vsize >> 16);
+    value[0x06] = (unsigned char)(vsize >> 8);
+    value[0x07] = (unsigned char)(vsize);
     bpf_map_update_elem(&metadata, name, value, BPF_ANY);
 }
 

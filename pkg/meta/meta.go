@@ -204,21 +204,71 @@ func (i *metadata) QueryMeta(ctx context.Context, table *proto.BpfTable) error {
 		)
 		switch {
 		case bytes.Equal(kk, fwzonek):
-			table.Meta[string(fwzone)] = hex.EncodeToString(vv)
+			zone := uint32(vv[0]) << 24
+			zone |= uint32(vv[1]) << 16
+			zone |= uint32(vv[2]) << 8
+			zone |= uint32(vv[3])
+			table.Meta[string(fwzone)] = fmt.Sprintf("%d", zone)
 		case bytes.Equal(kk, fwtsk):
-			table.Meta[string(fwts)] = hex.EncodeToString(vv)
+			ts := uint64(vv[0]) << 56
+			ts |= uint64(vv[1]) << 48
+			ts |= uint64(vv[2]) << 40
+			ts |= uint64(vv[3]) << 32
+			ts |= uint64(vv[4]) << 24
+			ts |= uint64(vv[5]) << 16
+			ts |= uint64(vv[6]) << 8
+			ts |= uint64(vv[7])
+			table.Meta[string(fwts)] = fmt.Sprintf("%d", ts)
 		case bytes.Equal(kk, fwtagk):
-			table.Meta[string(fwtag)] = hex.EncodeToString(vv)
+			a := uint16(vv[0]) << 8
+			a |= uint16(vv[1])
+
+			b := uint16(vv[2]) << 8
+			b |= uint16(vv[3])
+
+			c := uint32(vv[4]) << 24
+			c |= uint32(vv[5]) << 16
+			c |= uint32(vv[6]) << 8
+			c |= uint32(vv[7])
+
+			table.Meta[string(fwtag)] = fmt.Sprintf("%d.%d.%d", a, b, c)
 		case bytes.Equal(kk, fwcmitk):
 			table.Meta[string(fwcommit)] = hex.EncodeToString(vv)
 		case bytes.Equal(kk, bpftagk):
-			table.Meta[string(bpftag)] = hex.EncodeToString(vv)
+			a := uint16(vv[0]) << 8
+			a |= uint16(vv[1])
+
+			b := uint16(vv[2]) << 8
+			b |= uint16(vv[3])
+
+			c := uint32(vv[4]) << 24
+			c |= uint32(vv[5]) << 16
+			c |= uint32(vv[6]) << 8
+			c |= uint32(vv[7])
+
+			table.Meta[string(bpftag)] = fmt.Sprintf("%d.%d.%d", a, b, c)
 		case bytes.Equal(kk, bpfcmitk):
 			table.Meta[string(bpfcommit)] = hex.EncodeToString(vv)
 		case bytes.Equal(kk, bpflpmkk):
-			table.Meta[string(bpflpmkey)] = hex.EncodeToString(vv)
+			lpmkey := uint64(vv[0]) << 56
+			lpmkey |= uint64(vv[1]) << 48
+			lpmkey |= uint64(vv[2]) << 40
+			lpmkey |= uint64(vv[3]) << 32
+			lpmkey |= uint64(vv[4]) << 24
+			lpmkey |= uint64(vv[5]) << 16
+			lpmkey |= uint64(vv[6]) << 8
+			lpmkey |= uint64(vv[7])
+			table.Meta[string(bpflpmkey)] = fmt.Sprintf("%d", lpmkey)
 		case bytes.Equal(kk, bpflpmvk):
-			table.Meta[string(bpflpmval)] = hex.EncodeToString(vv)
+			lpmval := uint64(vv[0]) << 56
+			lpmval |= uint64(vv[1]) << 48
+			lpmval |= uint64(vv[2]) << 40
+			lpmval |= uint64(vv[3]) << 32
+			lpmval |= uint64(vv[4]) << 24
+			lpmval |= uint64(vv[5]) << 16
+			lpmval |= uint64(vv[6]) << 8
+			lpmval |= uint64(vv[7])
+			table.Meta[string(bpflpmval)] = fmt.Sprintf("%d", lpmval)
 		}
 	}
 	return nil

@@ -117,12 +117,52 @@ func (mgr *fwMgr) Read(ctx context.Context, table *proto.BpfTable) error {
 	if table.Protocol == nil {
 		table.Protocol = make(map[string]string)
 	}
+	if table.Action == nil {
+		table.Action = make(map[string]string)
+	}
+	if table.SrcIp == nil {
+		table.SrcIp = make(map[string]string)
+	}
+	if table.DstIp == nil {
+		table.DstIp = make(map[string]string)
+	}
+	if table.SrcPort == nil {
+		table.SrcPort = make(map[string]string)
+	}
+	if table.DstPort == nil {
+		table.DstPort = make(map[string]string)
+	}
 	err := mgr.metaTable.QueryMeta(ctx, table)
 	if err != nil {
 		return err
 	}
 	//1.解析协议
 	table.Protocol, err = mgr.readU8Table(ctx, mgr.protoTable)
+	if err != nil {
+		return err
+	}
+	//2. 解析Action
+	table.Action, err = mgr.readU8Table(ctx, mgr.actionTable)
+	if err != nil {
+		return err
+	}
+	//3. 解析源IP
+	table.SrcIp, err = mgr.readU32Table(ctx, mgr.srcIpTable)
+	if err != nil {
+		return err
+	}
+	//4. 解析目的IP
+	table.DstIp, err = mgr.readU32Table(ctx, mgr.dstIpTable)
+	if err != nil {
+		return err
+	}
+	//5. 解析源端口
+	table.SrcPort, err = mgr.readU16Table(ctx, mgr.srcPortTable)
+	if err != nil {
+		return err
+	}
+	//6. 解析目的端口
+	table.DstPort, err = mgr.readU16Table(ctx, mgr.dstPortTable)
 	if err != nil {
 		return err
 	}
@@ -235,7 +275,7 @@ func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable) (map[str
 		)
 		mask = kk[0] - 0x08*0x0b
 		proto = kk[0x0f]
-		r[rule.ProtoMaskEncode(&rule.ProtoMask{Proto: proto, Mask: mask})] = hex.EncodeToString(vv)
+		r[fmt.Sprintf("0x%x/%d", proto, mask)] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
@@ -282,6 +322,30 @@ func (mgr *fwMgr) writeU32Table(ctx context.Context, tableCli bpf.ITable, table 
 	return nil
 }
 
+func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable) (map[string]string, error) {
+	var r = make(map[string]string)
+	if tableCli == nil {
+		return r, nil
+	}
+	if !tableCli.ExistTable(ctx) {
+		return r, nil
+	}
+	var kv, err = tableCli.QueryTable(ctx)
+	if err != nil {
+		return r, err
+	}
+	for i := range kv {
+		var (
+			kk   = kv[i].Key
+			vv   = kv[i].Value
+			mask uint8
+		)
+		mask = kk[0] - 0x08*0x08
+		r[fmt.Sprintf("%d.%d.%d.%d/%d", vv[0x0c], vv[0x0d], vv[0x0e], vv[0x0f], mask)] = hex.EncodeToString(vv)
+	}
+	return r, nil
+}
+
 func (mgr *fwMgr) writeU16Table(ctx context.Context, tableCli bpf.ITable, table map[string]rule.IBitmap, zone int) error {
 	var err error
 	if tableCli == nil {
@@ -322,6 +386,33 @@ func (mgr *fwMgr) writeU16Table(ctx context.Context, tableCli bpf.ITable, table 
 		}
 	}
 	return nil
+}
+
+func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable) (map[string]string, error) {
+	var r = make(map[string]string)
+	if tableCli == nil {
+		return r, nil
+	}
+	if !tableCli.ExistTable(ctx) {
+		return r, nil
+	}
+	var kv, err = tableCli.QueryTable(ctx)
+	if err != nil {
+		return r, err
+	}
+	for i := range kv {
+		var (
+			kk   = kv[i].Key
+			vv   = kv[i].Value
+			mask uint8
+			port uint16
+		)
+		mask = kk[0] - 0x08*0x0a
+		port = uint16(vv[0x0e]) << 8
+		port |= uint16(vv[0x0f])
+		r[fmt.Sprintf("0x%x/%d", port, mask)] = hex.EncodeToString(vv)
+	}
+	return r, nil
 }
 
 func (mgr *fwMgr) encode(m []byte, s []byte) {
