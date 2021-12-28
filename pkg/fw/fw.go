@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/advancevillage/fw/pkg/bpf"
@@ -136,33 +137,34 @@ func (mgr *fwMgr) Read(ctx context.Context, table *proto.BpfTable) error {
 	if err != nil {
 		return err
 	}
+	var zone = mgr.parseZone(table.Meta)
 	//1.解析协议
-	table.Protocol, err = mgr.readU8Table(ctx, mgr.protoTable)
+	table.Protocol, err = mgr.readU8Table(ctx, mgr.protoTable, zone)
 	if err != nil {
 		return err
 	}
 	//2. 解析Action
-	table.Action, err = mgr.readU8Table(ctx, mgr.actionTable)
+	table.Action, err = mgr.readU8Table(ctx, mgr.actionTable, zone)
 	if err != nil {
 		return err
 	}
 	//3. 解析源IP
-	table.SrcIp, err = mgr.readU32Table(ctx, mgr.srcIpTable)
+	table.SrcIp, err = mgr.readU32Table(ctx, mgr.srcIpTable, zone)
 	if err != nil {
 		return err
 	}
 	//4. 解析目的IP
-	table.DstIp, err = mgr.readU32Table(ctx, mgr.dstIpTable)
+	table.DstIp, err = mgr.readU32Table(ctx, mgr.dstIpTable, zone)
 	if err != nil {
 		return err
 	}
 	//5. 解析源端口
-	table.SrcPort, err = mgr.readU16Table(ctx, mgr.srcPortTable)
+	table.SrcPort, err = mgr.readU16Table(ctx, mgr.srcPortTable, zone)
 	if err != nil {
 		return err
 	}
 	//6. 解析目的端口
-	table.DstPort, err = mgr.readU16Table(ctx, mgr.dstPortTable)
+	table.DstPort, err = mgr.readU16Table(ctx, mgr.dstPortTable, zone)
 	if err != nil {
 		return err
 	}
@@ -254,7 +256,7 @@ func (mgr *fwMgr) writeU8Table(ctx context.Context, tableCli bpf.ITable, table m
 	return nil
 }
 
-func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable) (map[string]string, error) {
+func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable, zone int) (map[string]string, error) {
 	var r = make(map[string]string)
 	if tableCli == nil {
 		return r, nil
@@ -272,10 +274,20 @@ func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable) (map[str
 			vv    = kv[i].Value
 			mask  uint8
 			proto uint8
+			ver   int
 		)
+		ver = int(kk[0x04]) << 24
+		ver |= int(kk[0x05]) << 16
+		ver |= int(kk[0x06]) << 8
+		ver |= int(kk[0x07])
+
+		if ver != zone {
+			continue
+		}
+
 		mask = kk[0] - 0x08*0x0b
 		proto = kk[0x0f]
-		r[fmt.Sprintf("%d", proto&(0xff<<(0x08-mask)))] = hex.EncodeToString(vv)
+		r[rule.ProtoMaskEncode(&rule.ProtoMask{Proto: proto, Mask: mask})] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
@@ -322,7 +334,7 @@ func (mgr *fwMgr) writeU32Table(ctx context.Context, tableCli bpf.ITable, table 
 	return nil
 }
 
-func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable) (map[string]string, error) {
+func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable, zone int) (map[string]string, error) {
 	var r = make(map[string]string)
 	if tableCli == nil {
 		return r, nil
@@ -339,7 +351,16 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable) (map[st
 			kk   = kv[i].Key
 			vv   = kv[i].Value
 			mask uint8
+			ver  int
 		)
+		ver = int(kk[0x04]) << 24
+		ver |= int(kk[0x05]) << 16
+		ver |= int(kk[0x06]) << 8
+		ver |= int(kk[0x07])
+		if ver != zone {
+			continue
+		}
+
 		mask = kk[0] - 0x08*0x08
 		r[fmt.Sprintf("%d.%d.%d.%d/%d", kk[0x0c], kk[0x0d], kk[0x0e], kk[0x0f], mask)] = hex.EncodeToString(vv)
 	}
@@ -388,7 +409,7 @@ func (mgr *fwMgr) writeU16Table(ctx context.Context, tableCli bpf.ITable, table 
 	return nil
 }
 
-func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable) (map[string]string, error) {
+func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable, zone int) (map[string]string, error) {
 	var r = make(map[string]string)
 	if tableCli == nil {
 		return r, nil
@@ -406,7 +427,16 @@ func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable) (map[st
 			vv   = kv[i].Value
 			mask uint8
 			port uint16
+			ver  int
 		)
+		ver = int(kk[0x04]) << 24
+		ver |= int(kk[0x05]) << 16
+		ver |= int(kk[0x06]) << 8
+		ver |= int(kk[0x07])
+		if ver != zone {
+			continue
+		}
+
 		mask = kk[0] - 0x08*0x0a
 		port = uint16(kk[0x0e]) << 8
 		port |= uint16(kk[0x0f])
@@ -429,4 +459,86 @@ func (mgr *fwMgr) encode(m []byte, s []byte) {
 	m[2] = 0xff & uint8((len(s) + 4))
 	m[3] = 0xff & uint8((len(s)+4)>>8)
 	copy(m[4:], s)
+}
+
+func (mgr *fwMgr) parseZone(meta map[string]string) int {
+	var zone = 0
+	if meta == nil {
+		return zone
+	}
+	s, ok := meta["fw.zone"]
+	if !ok {
+		return zone
+	}
+	zone, err := strconv.Atoi(s)
+	if err != nil {
+		return zone
+	}
+	return zone
+}
+
+func (mgr *fwMgr) analyze(table *proto.BpfTable) error {
+	var rules []*proto.FwRule
+
+	var (
+		u8mask    = uint8(0xff)
+		u8masklen = uint8(0x08)
+	)
+
+	//bitmap 从低位向高位递进
+	for i := 0; i < mgr.bml*8; i++ {
+		//解析协议
+		var (
+			protocol = &rule.ProtoMask{Proto: 0xff, Mask: 0xff}
+		)
+		for k, v := range table.Protocol {
+			//bitmap
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return err
+			}
+			o := rule.ProtoMaskDecode(k)
+			if nil == o {
+				return errors.New("proto encode err")
+			}
+
+			var (
+				cur   = i / 8
+				pos   = i % 8
+				probe = uint8(0x80)
+			)
+
+			if b[cur]&(probe>>pos) == 0x0 {
+				continue
+			}
+
+			if protocol.Proto == 0xff && protocol.Mask == 0xff {
+				protocol.Proto = o.Proto
+				protocol.Mask = o.Mask
+				continue
+			}
+
+			if protocol.Proto&(u8mask>>(u8masklen-o.Mask)) == o.Proto {
+				protocol.Proto = o.Proto
+				protocol.Mask = o.Mask
+				continue
+			}
+		}
+
+		if mgr.isEmptyU8(protocol) {
+			break
+		}
+
+		var rule = &proto.FwRule{
+			Protocol: rule.ProtoStr(protocol.Proto & (u8mask >> (u8masklen - protocol.Mask))),
+		}
+
+		rules = append(rules, rule)
+	}
+
+	return nil
+}
+
+func (mgr *fwMgr) isEmptyU8(a *rule.ProtoMask) bool {
+	return a.Proto == 0xff && a.Mask == 0xff
 }

@@ -41,6 +41,13 @@ var (
 		GRE:  0x2f,
 	}
 
+	numberR = map[uint8]string{
+		0x06: TCP,
+		0x11: UDP,
+		0x01: ICMP,
+		0x2f: GRE,
+	}
+
 	op = map[string]uint8{
 		ACCEPT: 0x01,
 		DROP:   0x00,
@@ -463,4 +470,8 @@ func (e *engine) addProto(cidr map[string]IBitmap, p uint8, mask uint8) {
 	if !ok {
 		cidr[ProtoMaskEncode(&ProtoMask{Proto: p, Mask: mask})] = NewBitmap(e.bml)
 	}
+}
+
+func ProtoStr(n uint8) string {
+	return numberR[n]
 }
