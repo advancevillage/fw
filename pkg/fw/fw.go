@@ -516,7 +516,7 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 				continue
 			}
 
-			if protocol.Proto&(u8mask>>(u8len-o.Mask)) == o.Proto {
+			if protocol.Proto&(u8mask<<(u8len-o.Mask)) == o.Proto {
 				protocol.Proto = o.Proto
 				protocol.Mask = o.Mask
 				continue
@@ -550,7 +550,7 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 				continue
 			}
 
-			if srcPort.Port&(u16mask>>(u16len-o.Mask)) == o.Port {
+			if srcPort.Port&(u16mask<<(u16len-o.Mask)) == o.Port {
 				srcPort.Port = o.Port
 				srcPort.Mask = o.Mask
 				continue
@@ -584,7 +584,7 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 				continue
 			}
 
-			if srcIp.Ip&(u32mask>>(u32len-o.Mask)) == o.Ip {
+			if srcIp.Ip&(u32mask<<(u32len-o.Mask)) == o.Ip {
 				srcIp.Ip = o.Ip
 				srcIp.Mask = o.Mask
 				continue

@@ -475,14 +475,14 @@ func (e *engine) addProto(cidr map[string]IBitmap, p uint8, mask uint8) {
 func ProtoStr(p uint8, mask uint8) string {
 	var u8mask = uint8(0xff)
 	var u8len = uint8(0x08)
-	var n = p & (u8mask >> (u8len - mask))
+	var n = p & (u8mask << (u8len - mask))
 	return numberR[n]
 }
 
 func PortStr(p uint16, mask uint8) string {
 	var u16mask = uint16(0xffff)
 	var u16len = uint8(0x10)
-	var n = p & (u16mask >> (u16len - mask))
+	var n = p & (u16mask << (u16len - mask))
 	var m = n + (0x01 << (u16len - mask)) - 1
 	return fmt.Sprintf("%d-%d", n, m)
 }
