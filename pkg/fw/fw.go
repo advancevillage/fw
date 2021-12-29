@@ -28,7 +28,7 @@ import (
 //				 key
 
 type IFwMgr interface {
-	Read(ctx context.Context, table *proto.BpfTable) error
+	Read(ctx context.Context) ([]*proto.FwRule, error)
 	Write(ctx context.Context, version int, rules []*proto.FwRule) error
 }
 
@@ -110,65 +110,53 @@ func NewFwMgr(bml int) (IFwMgr, error) {
 	return mgr, nil
 }
 
-func (mgr *fwMgr) Read(ctx context.Context, table *proto.BpfTable) error {
+func (mgr *fwMgr) Read(ctx context.Context) ([]*proto.FwRule, error) {
 	//1. 解析元数据
-	if table.Meta == nil {
-		table.Meta = make(map[string]string)
-	}
-	if table.Protocol == nil {
-		table.Protocol = make(map[string]string)
-	}
-	if table.Action == nil {
-		table.Action = make(map[string]string)
-	}
-	if table.SrcIp == nil {
-		table.SrcIp = make(map[string]string)
-	}
-	if table.DstIp == nil {
-		table.DstIp = make(map[string]string)
-	}
-	if table.SrcPort == nil {
-		table.SrcPort = make(map[string]string)
-	}
-	if table.DstPort == nil {
-		table.DstPort = make(map[string]string)
+	var table = &proto.BpfTable{
+		Meta:     make(map[string]string),
+		Protocol: make(map[string]string),
+		Action:   make(map[string]string),
+		SrcIp:    make(map[string]string),
+		DstIp:    make(map[string]string),
+		SrcPort:  make(map[string]string),
+		DstPort:  make(map[string]string),
 	}
 	err := mgr.metaTable.QueryMeta(ctx, table)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var zone = mgr.parseZone(table.Meta)
 	//1.解析协议
 	table.Protocol, err = mgr.readU8Table(ctx, mgr.protoTable, zone)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//2. 解析Action
 	table.Action, err = mgr.readU8Table(ctx, mgr.actionTable, zone)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//3. 解析源IP
 	table.SrcIp, err = mgr.readU32Table(ctx, mgr.srcIpTable, zone)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//4. 解析目的IP
 	table.DstIp, err = mgr.readU32Table(ctx, mgr.dstIpTable, zone)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//5. 解析源端口
 	table.SrcPort, err = mgr.readU16Table(ctx, mgr.srcPortTable, zone)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//6. 解析目的端口
 	table.DstPort, err = mgr.readU16Table(ctx, mgr.dstPortTable, zone)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return mgr.analyze(table)
 }
 
 func (mgr *fwMgr) Write(ctx context.Context, version int, rules []*proto.FwRule) error {
@@ -352,6 +340,7 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable, zone in
 			vv   = kv[i].Value
 			mask uint8
 			ver  int
+			ip   uint32
 		)
 		ver = int(kk[0x04]) << 24
 		ver |= int(kk[0x05]) << 16
@@ -362,7 +351,11 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable, zone in
 		}
 
 		mask = kk[0] - 0x08*0x08
-		r[fmt.Sprintf("%d.%d.%d.%d/%d", kk[0x0c], kk[0x0d], kk[0x0e], kk[0x0f], mask)] = hex.EncodeToString(vv)
+		ip = uint32(kk[0x0c]) << 24
+		ip |= uint32(kk[0x0d]) << 16
+		ip |= uint32(kk[0x0e]) << 8
+		ip |= uint32(kk[0x0f])
+		r[rule.IpMaskEncode(&rule.IpMask{Ip: ip, Mask: mask})] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
@@ -440,7 +433,7 @@ func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable, zone in
 		mask = kk[0] - 0x08*0x0a
 		port = uint16(kk[0x0e]) << 8
 		port |= uint16(kk[0x0f])
-		r[fmt.Sprintf("%d/%d", port, mask)] = hex.EncodeToString(vv)
+		r[rule.PortMaskEncode(&rule.PortMask{Port: port, Mask: mask})] = hex.EncodeToString(vv)
 	}
 	return r, nil
 }
@@ -477,12 +470,15 @@ func (mgr *fwMgr) parseZone(meta map[string]string) int {
 	return zone
 }
 
-func (mgr *fwMgr) analyze(table *proto.BpfTable) error {
+func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 	var rules []*proto.FwRule
-
 	var (
-		u8mask    = uint8(0xff)
-		u8masklen = uint8(0x08)
+		u8mask  = uint8(0xff)
+		u8len   = uint8(0x08)
+		u16mask = uint16(0xffff)
+		u16len  = uint8(0x10)
+		u32mask = uint32(0xffffffff)
+		u32len  = uint8(0x20)
 	)
 
 	//bitmap 从低位向高位递进
@@ -490,16 +486,18 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) error {
 		//解析协议
 		var (
 			protocol = &rule.ProtoMask{Proto: 0xff, Mask: 0xff}
+			srcPort  = &rule.PortMask{Port: 0xffff, Mask: 0xff}
+			srcIp    = &rule.IpMask{Ip: 0xffffffff, Mask: 0xff}
 		)
 		for k, v := range table.Protocol {
 			//bitmap
 			b, err := hex.DecodeString(v)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			o := rule.ProtoMaskDecode(k)
 			if nil == o {
-				return errors.New("proto encode err")
+				return nil, errors.New("proto encode err")
 			}
 
 			var (
@@ -512,33 +510,111 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) error {
 				continue
 			}
 
-			if protocol.Proto == 0xff && protocol.Mask == 0xff {
+			if mgr.isEmptyU8(protocol) {
 				protocol.Proto = o.Proto
 				protocol.Mask = o.Mask
 				continue
 			}
 
-			if protocol.Proto&(u8mask>>(u8masklen-o.Mask)) == o.Proto {
+			if protocol.Proto&(u8mask>>(u8len-o.Mask)) == o.Proto {
 				protocol.Proto = o.Proto
 				protocol.Mask = o.Mask
 				continue
 			}
 		}
 
-		if mgr.isEmptyU8(protocol) {
+		for k, v := range table.SrcPort {
+			//bitmap
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			o := rule.PortMaskDecode(k)
+			if nil == o {
+				return nil, errors.New("port encode err")
+			}
+
+			var (
+				cur   = i / 8
+				pos   = i % 8
+				probe = uint8(0x80)
+			)
+
+			if b[cur]&(probe>>pos) == 0x0 {
+				continue
+			}
+
+			if mgr.isEmptyU16(srcPort) {
+				srcPort.Port = o.Port
+				srcPort.Mask = o.Mask
+				continue
+			}
+
+			if srcPort.Port&(u16mask>>(u16len-o.Mask)) == o.Port {
+				srcPort.Port = o.Port
+				srcPort.Mask = o.Mask
+				continue
+			}
+		}
+
+		for k, v := range table.SrcIp {
+			//bitmap
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			o := rule.IpMaskDecode(k)
+			if nil == o {
+				return nil, errors.New("ip encode err")
+			}
+
+			var (
+				cur   = i / 8
+				pos   = i % 8
+				probe = uint8(0x80)
+			)
+
+			if b[cur]&(probe>>pos) == 0x0 {
+				continue
+			}
+
+			if mgr.isEmptyU32(srcIp) {
+				srcIp.Ip = o.Ip
+				srcIp.Mask = o.Mask
+				continue
+			}
+
+			if srcIp.Ip&(u32mask>>(u32len-o.Mask)) == o.Ip {
+				srcIp.Ip = o.Ip
+				srcIp.Mask = o.Mask
+				continue
+			}
+		}
+
+		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) {
 			break
 		}
 
 		var rule = &proto.FwRule{
-			Protocol: rule.ProtoStr(protocol.Proto & (u8mask >> (u8masklen - protocol.Mask))),
+			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
+			SrcPort:  rule.PortStr(srcPort.Port, srcPort.Mask),
+			SrcIp:    rule.IpStr(srcIp.Ip, srcIp.Mask),
 		}
 
 		rules = append(rules, rule)
 	}
 
-	return nil
+	return rules, nil
 }
 
 func (mgr *fwMgr) isEmptyU8(a *rule.ProtoMask) bool {
 	return a.Proto == 0xff && a.Mask == 0xff
+}
+
+func (mgr *fwMgr) isEmptyU16(a *rule.PortMask) bool {
+	return a.Port == 0xffff && a.Mask == 0xff
+}
+
+func (mgr *fwMgr) isEmptyU32(a *rule.IpMask) bool {
+	return a.Ip == 0xffffffff && a.Mask == 0xff
 }

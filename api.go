@@ -44,7 +44,7 @@ type queryFwRequest struct {
 
 type queryFwResponse struct {
 	proto.ActionResponse
-	proto.BpfTable
+	Rules []*proto.FwRule
 }
 
 func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
@@ -123,10 +123,11 @@ func (s *Srv) updateFirewall(ctx context.Context, response *updateFwResponse, re
 }
 
 func (s *Srv) queryFirewall(ctx context.Context, response *queryFwResponse, request *queryFwRequest) {
-	var err = s.fwCli.Read(ctx, &response.BpfTable)
+	var rules, err = s.fwCli.Read(ctx)
 	if err != nil {
 		s.logger.Errorw(ctx, "query firewall fail", "err", err)
 		response.Errors = append(response.Errors, &proto.Error{Code: FwQueryCode, Msg: FwQueryMsg})
 		response.Code = SrvErr
 	}
+	response.Rules = rules
 }
