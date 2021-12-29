@@ -486,8 +486,11 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 		//解析协议
 		var (
 			protocol = &rule.ProtoMask{Proto: 0xff, Mask: 0xff}
-			srcPort  = &rule.PortMask{Port: 0xffff, Mask: 0xff}
 			srcIp    = &rule.IpMask{Ip: 0xffffffff, Mask: 0xff}
+			dstIp    = &rule.IpMask{Ip: 0xffffffff, Mask: 0xff}
+			srcPort  = &rule.PortMask{Port: 0xffff, Mask: 0xff}
+			dstPort  = &rule.PortMask{Port: 0xffff, Mask: 0xff}
+			action   = &rule.ProtoMask{Proto: 0xff, Mask: 0xff}
 		)
 		for k, v := range table.Protocol {
 			//bitmap
@@ -523,15 +526,15 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 			}
 		}
 
-		for k, v := range table.SrcPort {
+		for k, v := range table.Action {
 			//bitmap
 			b, err := hex.DecodeString(v)
 			if err != nil {
 				return nil, err
 			}
-			o := rule.PortMaskDecode(k)
+			o := rule.ProtoMaskDecode(k)
 			if nil == o {
-				return nil, errors.New("port encode err")
+				return nil, errors.New("action encode err")
 			}
 
 			var (
@@ -544,15 +547,15 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 				continue
 			}
 
-			if mgr.isEmptyU16(srcPort) {
-				srcPort.Port = o.Port
-				srcPort.Mask = o.Mask
+			if mgr.isEmptyU8(action) {
+				action.Proto = o.Proto
+				action.Mask = o.Mask
 				continue
 			}
 
-			if srcPort.Port&(u16mask<<(u16len-o.Mask)) == o.Port {
-				srcPort.Port = o.Port
-				srcPort.Mask = o.Mask
+			if action.Proto&(u8mask<<(u8len-o.Mask)) == o.Proto {
+				action.Proto = o.Proto
+				action.Mask = o.Mask
 				continue
 			}
 		}
@@ -591,7 +594,109 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 			}
 		}
 
-		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) {
+		for k, v := range table.SrcPort {
+			//bitmap
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			o := rule.PortMaskDecode(k)
+			if nil == o {
+				return nil, errors.New("port encode err")
+			}
+
+			var (
+				cur   = i / 8
+				pos   = i % 8
+				probe = uint8(0x80)
+			)
+
+			if b[cur]&(probe>>pos) == 0x0 {
+				continue
+			}
+
+			if mgr.isEmptyU16(srcPort) {
+				srcPort.Port = o.Port
+				srcPort.Mask = o.Mask
+				continue
+			}
+
+			if srcPort.Port&(u16mask<<(u16len-o.Mask)) == o.Port {
+				srcPort.Port = o.Port
+				srcPort.Mask = o.Mask
+				continue
+			}
+		}
+
+		for k, v := range table.DstIp {
+			//bitmap
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			o := rule.IpMaskDecode(k)
+			if nil == o {
+				return nil, errors.New("ip encode err")
+			}
+
+			var (
+				cur   = i / 8
+				pos   = i % 8
+				probe = uint8(0x80)
+			)
+
+			if b[cur]&(probe>>pos) == 0x0 {
+				continue
+			}
+
+			if mgr.isEmptyU32(dstIp) {
+				dstIp.Ip = o.Ip
+				dstIp.Mask = o.Mask
+				continue
+			}
+
+			if dstIp.Ip&(u32mask<<(u32len-o.Mask)) == o.Ip {
+				dstIp.Ip = o.Ip
+				dstIp.Mask = o.Mask
+				continue
+			}
+		}
+
+		for k, v := range table.DstPort {
+			//bitmap
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			o := rule.PortMaskDecode(k)
+			if nil == o {
+				return nil, errors.New("port encode err")
+			}
+
+			var (
+				cur   = i / 8
+				pos   = i % 8
+				probe = uint8(0x80)
+			)
+
+			if b[cur]&(probe>>pos) == 0x0 {
+				continue
+			}
+
+			if mgr.isEmptyU16(dstPort) {
+				dstPort.Port = o.Port
+				dstPort.Mask = o.Mask
+				continue
+			}
+
+			if dstPort.Port&(u16mask<<(u16len-o.Mask)) == o.Port {
+				dstPort.Port = o.Port
+				dstPort.Mask = o.Mask
+				continue
+			}
+		}
+
+		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) && mgr.isEmptyU32(dstIp) && mgr.isEmptyU16(dstPort) && mgr.isEmptyU8(action) {
 			break
 		}
 
@@ -599,6 +704,9 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
 			SrcPort:  rule.PortStr(srcPort.Port, srcPort.Mask),
 			SrcIp:    rule.IpStr(srcIp.Ip, srcIp.Mask),
+			DstIp:    rule.IpStr(dstIp.Ip, dstIp.Mask),
+			DstPort:  rule.PortStr(dstPort.Port, dstPort.Mask),
+			Action:   rule.ActionStr(action.Proto, action.Mask),
 		}
 
 		rules = append(rules, rule)

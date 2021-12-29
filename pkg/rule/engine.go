@@ -53,6 +53,11 @@ var (
 		DROP:   0x00,
 	}
 
+	opR = map[uint8]string{
+		0x01: ACCEPT,
+		0x00: DROP,
+	}
+
 	l3 = map[string]string{ //默认端口掩码
 		ICMP: "0",
 		GRE:  "0",
@@ -477,6 +482,13 @@ func ProtoStr(p uint8, mask uint8) string {
 	var u8len = uint8(0x08)
 	var n = p & (u8mask << (u8len - mask))
 	return numberR[n]
+}
+
+func ActionStr(p uint8, mask uint8) string {
+	var u8mask = uint8(0xff)
+	var u8len = uint8(0x08)
+	var n = p & (u8mask << (u8len - mask))
+	return opR[n]
 }
 
 func PortStr(p uint16, mask uint8) string {
