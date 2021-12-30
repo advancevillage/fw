@@ -163,7 +163,7 @@ func (mgr *fwMgr) Read(ctx context.Context) ([]*proto.FwRule, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mgr.analyze(table)
+	return mgr.analyze(ctx, table)
 }
 
 func (mgr *fwMgr) Write(ctx context.Context, version int, rules []*proto.FwRule) error {
@@ -480,7 +480,7 @@ func (mgr *fwMgr) parseZone(meta map[string]string) int {
 	return zone
 }
 
-func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
+func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.FwRule, error) {
 	var rules []*proto.FwRule
 	var (
 		u8mask  = uint8(0xff)
@@ -709,6 +709,8 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) && mgr.isEmptyU32(dstIp) && mgr.isEmptyU16(dstPort) && mgr.isEmptyU8(action) {
 			break
 		}
+
+		mgr.logger.Infow(ctx, "index", "i", i, "protocol", mgr.isEmptyU8(protocol))
 
 		var rule = &proto.FwRule{
 			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
