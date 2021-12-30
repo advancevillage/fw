@@ -358,7 +358,7 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable, zone in
 			tableCli.DeleteTable(ctx, kk)
 			continue
 		}
-
+		mgr.logger.Infow(ctx, "u32", "key", kk, "value", vv)
 		mask = kk[0] - 0x08*0x08
 		ip = uint32(kk[0x0c]) << 24
 		ip |= uint32(kk[0x0d]) << 16
