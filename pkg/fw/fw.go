@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/advancevillage/3rd/logx"
 	"github.com/advancevillage/fw/pkg/bpf"
 	"github.com/advancevillage/fw/pkg/meta"
 	"github.com/advancevillage/fw/pkg/rule"
@@ -62,34 +63,35 @@ type fwMgr struct {
 	metaTable    meta.IMeta       //更新内核程序
 	mu           sync.Mutex
 	bml          int
+	logger       logx.ILogger
 }
 
-func NewFwMgr(bml int) (IFwMgr, error) {
-	protoTable, err := bpf.NewTableClient(protoTableName, "lpm_trie", keySize, bml, maxEntries)
+func NewFwMgr(logger logx.ILogger, bml int) (IFwMgr, error) {
+	protoTable, err := bpf.NewTableClient(logger, protoTableName, "lpm_trie", keySize, bml, maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	srcIpTable, err := bpf.NewTableClient(srcIpTableName, "lpm_trie", keySize, bml, maxEntries)
+	srcIpTable, err := bpf.NewTableClient(logger, srcIpTableName, "lpm_trie", keySize, bml, maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	srcPortTable, err := bpf.NewTableClient(srcPortTableName, "lpm_trie", keySize, bml, maxEntries)
+	srcPortTable, err := bpf.NewTableClient(logger, srcPortTableName, "lpm_trie", keySize, bml, maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	dstIpTable, err := bpf.NewTableClient(dstIpTableName, "lpm_trie", keySize, bml, maxEntries)
+	dstIpTable, err := bpf.NewTableClient(logger, dstIpTableName, "lpm_trie", keySize, bml, maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	dstPortTable, err := bpf.NewTableClient(dstPortTableName, "lpm_trie", keySize, bml, maxEntries)
+	dstPortTable, err := bpf.NewTableClient(logger, dstPortTableName, "lpm_trie", keySize, bml, maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	actionTable, err := bpf.NewTableClient(actionTableName, "lpm_trie", keySize, bml, maxEntries)
+	actionTable, err := bpf.NewTableClient(logger, actionTableName, "lpm_trie", keySize, bml, maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	metaTable, err := meta.NewMetadata()
+	metaTable, err := meta.NewMetadata(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +108,7 @@ func NewFwMgr(bml int) (IFwMgr, error) {
 		ruleEngine:   ruleEngine,
 		metaTable:    metaTable,
 		bml:          bml,
+		logger:       logger,
 	}
 	return mgr, nil
 }
@@ -270,6 +273,7 @@ func (mgr *fwMgr) readU8Table(ctx context.Context, tableCli bpf.ITable, zone int
 		ver |= int(kk[0x07])
 
 		if ver != zone {
+			tableCli.DeleteTable(ctx, kk)
 			continue
 		}
 
@@ -347,6 +351,7 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable, zone in
 		ver |= int(kk[0x06]) << 8
 		ver |= int(kk[0x07])
 		if ver != zone {
+			tableCli.DeleteTable(ctx, kk)
 			continue
 		}
 
@@ -427,6 +432,7 @@ func (mgr *fwMgr) readU16Table(ctx context.Context, tableCli bpf.ITable, zone in
 		ver |= int(kk[0x06]) << 8
 		ver |= int(kk[0x07])
 		if ver != zone {
+			tableCli.DeleteTable(ctx, kk)
 			continue
 		}
 

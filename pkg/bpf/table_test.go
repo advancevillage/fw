@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/advancevillage/3rd/logx"
 )
 
 var testTable = map[string]struct {
@@ -27,10 +29,15 @@ var testTable = map[string]struct {
 }
 
 func Test_table(t *testing.T) {
+	logger, err := logx.NewLogger("info")
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 	for n, p := range testTable {
 		f := func(t *testing.T) {
 			p.file = randStr(8)
-			var ta, err = NewTableClient(p.file, p.tYpe, p.keySize, p.valueSize, p.maxEntries)
+			var ta, err = NewTableClient(logger, p.file, p.tYpe, p.keySize, p.valueSize, p.maxEntries)
 			if err != nil {
 				t.Fatal(err)
 				return
@@ -198,9 +205,14 @@ var testinnerTable = map[string]struct {
 }
 
 func Test_hash_in_map(t *testing.T) {
+	logger, err := logx.NewLogger("info")
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 	for n, p := range testinnerTable {
 		f := func(t *testing.T) {
-			var inner, err = NewTableClient(p.inner, p.innerType, p.innerKeySize, p.innerValueSzie, p.innerMaxEntries)
+			var inner, err = NewTableClient(logger, p.inner, p.innerType, p.innerKeySize, p.innerValueSzie, p.innerMaxEntries)
 			if err != nil {
 				t.Fatal(err)
 				return
@@ -216,7 +228,7 @@ func Test_hash_in_map(t *testing.T) {
 			}
 
 			//2. 创建外表
-			outer, err := NewTableClient(p.outer, p.outerType, p.outterKeySize, p.outerValueSzie, p.outerMaxEntries)
+			outer, err := NewTableClient(logger, p.outer, p.outerType, p.outterKeySize, p.outerValueSzie, p.outerMaxEntries)
 			if err != nil {
 				t.Fatal(err)
 				return

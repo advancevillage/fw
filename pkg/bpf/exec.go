@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
+
+	"github.com/advancevillage/3rd/logx"
 )
 
 const (
@@ -21,6 +23,7 @@ type bpftool struct {
 	object  string
 	cmd     string
 	debug   bool
+	logger  logx.ILogger
 }
 
 type bpftoolOption func(*bpftool)
@@ -33,12 +36,6 @@ func newBpfTool(opts ...bpftoolOption) *bpftool {
 	}
 
 	return a
-}
-
-func withDebug(debug bool) bpftoolOption {
-	return func(a *bpftool) {
-		a.debug = debug
-	}
 }
 
 func withExec() bpftoolOption {
@@ -56,6 +53,12 @@ func withJSON() bpftoolOption {
 func withMap() bpftoolOption {
 	return func(a *bpftool) {
 		a.object = "map"
+	}
+}
+
+func withLog(l logx.ILogger) bpftoolOption {
+	return func(a *bpftool) {
+		a.logger = l
 	}
 }
 
@@ -158,9 +161,7 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 		buf    []byte
 		err    error
 	)
-	if a.debug {
-		fmt.Println(cmd.String())
-	}
+	a.logger.Infow(ctx, "bpftool", cmd.String())
 	stdOut, err = cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -197,9 +198,7 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 func (a *bpftool) unlink(ctx context.Context, file string) error {
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
 	var cmd = exec.CommandContext(ctx, "unlink", file)
-	if a.debug {
-		fmt.Println(cmd.String())
-	}
+	a.logger.Infow(ctx, "bpftool", cmd.String())
 	var err = cmd.Run()
 	if err != nil {
 		return err

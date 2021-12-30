@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/advancevillage/3rd/logx"
 	"github.com/advancevillage/fw/pkg/bpf"
 	"github.com/advancevillage/fw/proto"
 )
@@ -45,10 +46,11 @@ type metadata struct {
 	tableCli  bpf.ITable
 	keySize   int
 	valueSize int
+	logger    logx.ILogger
 }
 
-func NewMetadata() (IMeta, error) {
-	var cli, err = bpf.NewTableClient(name, "hash", keySize, valueSize, maxSize)
+func NewMetadata(logger logx.ILogger) (IMeta, error) {
+	var cli, err = bpf.NewTableClient(logger, name, "hash", keySize, valueSize, maxSize)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +58,7 @@ func NewMetadata() (IMeta, error) {
 		tableCli:  cli,
 		keySize:   keySize,
 		valueSize: valueSize,
+		logger:    logger,
 	}, nil
 }
 
