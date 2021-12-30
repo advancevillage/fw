@@ -302,14 +302,11 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		//table protocol
 		for key, value := range protocol {
 			var (
-				match = ProtoMaskDecode(key)
-				proto = uint8(v.GetProtocol())
-				mask  = uint8(0xff << (0x08 - match.Mask))
+				matchPrefix = uint8(v.GetProtocol())
+				matchMask   = uint8(0x08)
+				match       = ProtoMaskEncode(&ProtoMask{Proto: matchPrefix, Mask: matchMask})
 			)
-			if match == nil {
-				continue
-			}
-			if proto&mask == match.Proto {
+			if key == match {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
@@ -318,17 +315,11 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		//table src ip
 		for key, value := range srcIp {
 			var (
-				match     = IpMaskDecode(key)
-				nwSrc     = v.GetSrcIp()
-				mask      = uint32(0xffffffff << (0x20 - match.Mask))
-				nwSrcMask = uint32(0xffffffff << (0x20 - v.GetSrcIpMask()))
+				matchPrefix = v.GetSrcIp()
+				matchMask   = uint8(v.GetSrcIpMask())
+				match       = IpMaskEncode(&IpMask{Ip: matchPrefix, Mask: matchMask})
 			)
-			if match == nil {
-				continue
-			}
-			if nwSrc&nwSrcMask&mask == match.Ip { //匹配
-				value.Set(uint16(i))
-			} else if match.Ip&mask&nwSrcMask == nwSrc { //包含
+			if key == match {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
@@ -337,17 +328,11 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		//table src port
 		for key, value := range srcPort {
 			var (
-				match     = PortMaskDecode(key)
-				tpSrc     = uint16(v.GetSrcPort())
-				mask      = uint16(0xffff << (0x10 - match.Mask))
-				tpSrcMask = uint16(0xffff << (0x10 - v.GetSrcPortMask()))
+				matchPrefix = uint16(v.GetSrcPort())
+				matchMask   = uint8(v.GetSrcPortMask())
+				match       = PortMaskEncode(&PortMask{Port: matchPrefix, Mask: matchMask})
 			)
-			if match == nil {
-				continue
-			}
-			if tpSrc&tpSrcMask&mask == match.Port { //匹配
-				value.Set(uint16(i))
-			} else if match.Port&mask&tpSrcMask == tpSrc { //包含
+			if key == match {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
@@ -356,17 +341,11 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		//table dst ip
 		for key, value := range dstIp {
 			var (
-				match     = IpMaskDecode(key)
-				nwDst     = v.GetDstIp()
-				mask      = uint32(0xffffffff << (0x20 - match.Mask))
-				nwDstMask = uint32(0xffffffff << (0x20 - v.GetDstIpMask()))
+				matchPrefix = v.GetDstIp()
+				matchMask   = uint8(v.GetDstIpMask())
+				match       = IpMaskEncode(&IpMask{Ip: matchPrefix, Mask: matchMask})
 			)
-			if match == nil {
-				continue
-			}
-			if nwDst&nwDstMask&mask == match.Ip { //匹配
-				value.Set(uint16(i))
-			} else if match.Ip&mask&nwDstMask == nwDst { //包含
+			if key == match {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
@@ -375,17 +354,11 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		//table dst port
 		for key, value := range dstPort {
 			var (
-				match     = PortMaskDecode(key)
-				tpDst     = uint16(v.GetDstPort())
-				mask      = uint16(0xffff << (0x10 - match.Mask))
-				tpDstMask = uint16(0xffff << (0x10 - v.GetDstPortMask()))
+				matchPrefix = uint16(v.GetDstPort())
+				matchMask   = uint8(v.GetDstPortMask())
+				match       = PortMaskEncode(&PortMask{Port: matchPrefix, Mask: matchMask})
 			)
-			if match == nil {
-				continue
-			}
-			if tpDst&tpDstMask&mask == match.Port {
-				value.Set(uint16(i))
-			} else if match.Port&mask&tpDstMask == tpDst {
+			if key == match {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))
@@ -394,14 +367,11 @@ func (e *engine) analyze(rules []*proto.BpfFwRule) *LBVS {
 		//table action
 		for key, value := range action {
 			var (
-				match = ProtoMaskDecode(key)
-				op    = uint8(v.GetAction())
-				mask  = uint8(0xff << (0x08 - match.Mask))
+				matchPrefix = uint8(v.GetAction())
+				matchMask   = uint8(0x08)
+				match       = ProtoMaskEncode(&ProtoMask{Proto: matchPrefix, Mask: matchMask})
 			)
-			if match == nil {
-				continue
-			}
-			if op&mask == match.Proto {
+			if key == match {
 				value.Set(uint16(i))
 			} else {
 				value.Unset(uint16(i))

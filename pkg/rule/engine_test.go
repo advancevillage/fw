@@ -223,11 +223,11 @@ var testEngine = map[string]struct {
 			SrcPort: map[string]IBitmap{
 				PortMaskEncode(&PortMask{Port: 0x0064, Mask: 0x0e}): via(0),
 				PortMaskEncode(&PortMask{Port: 0x0068, Mask: 0x0d}): via(1),
-				PortMaskEncode(&PortMask{Port: 0x0070, Mask: 0x0c}): via(2, 6),
+				PortMaskEncode(&PortMask{Port: 0x0070, Mask: 0x0c}): via(2),
 				PortMaskEncode(&PortMask{Port: 0x0080, Mask: 0x0a}): via(3),
 				PortMaskEncode(&PortMask{Port: 0x00c0, Mask: 0x0d}): via(4),
 				PortMaskEncode(&PortMask{Port: 0x00c8, Mask: 0x10}): via(5),
-				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(2, 6),
+				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(6),
 			},
 			DstIp: map[string]IBitmap{
 				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2, 3, 4, 5, 6),
@@ -280,11 +280,11 @@ var testEngine = map[string]struct {
 			SrcPort: map[string]IBitmap{
 				PortMaskEncode(&PortMask{Port: 0x0064, Mask: 0x0e}): via(0, 1),
 				PortMaskEncode(&PortMask{Port: 0x0068, Mask: 0x0d}): via(2, 3),
-				PortMaskEncode(&PortMask{Port: 0x0070, Mask: 0x0c}): via(4, 5, 12),
+				PortMaskEncode(&PortMask{Port: 0x0070, Mask: 0x0c}): via(4, 5),
 				PortMaskEncode(&PortMask{Port: 0x0080, Mask: 0x0a}): via(6, 7),
 				PortMaskEncode(&PortMask{Port: 0x00c0, Mask: 0x0d}): via(8, 9),
 				PortMaskEncode(&PortMask{Port: 0x00c8, Mask: 0x10}): via(10, 11),
-				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(4, 5, 12),
+				PortMaskEncode(&PortMask{Port: 0x0078, Mask: 0x10}): via(12),
 			},
 			DstIp: map[string]IBitmap{
 				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
@@ -329,21 +329,21 @@ var testEngine = map[string]struct {
 				ProtoMaskEncode(&ProtoMask{Proto: number["tcp"], Mask: 0x08}): via(0, 1, 2, 3, 8, 9),
 			},
 			SrcIp: map[string]IBitmap{
-				IpMaskEncode(&IpMask{Ip: 0xc0a83800, Mask: 0x18}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
-				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+				IpMaskEncode(&IpMask{Ip: 0xc0a83800, Mask: 0x18}): via(0, 1, 2, 3, 4, 5, 6, 7),
+				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(8, 9),
 			},
 			SrcPort: map[string]IBitmap{
 				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x01}): via(0, 1, 4, 5, 8),
 				PortMaskEncode(&PortMask{Port: 0x8000, Mask: 0x01}): via(2, 3, 6, 7, 9),
 			},
 			DstIp: map[string]IBitmap{
-				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
-				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+				IpMaskEncode(&IpMask{Ip: 0x6e0b0b18, Mask: 0x20}): via(8, 9),
+				IpMaskEncode(&IpMask{Ip: 0x00000000, Mask: 0x00}): via(0, 1, 2, 3, 4, 5, 6, 7),
 			},
 			DstPort: map[string]IBitmap{
-				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x01}): via(0, 2, 4, 6, 8, 9),
+				PortMaskEncode(&PortMask{Port: 0x0000, Mask: 0x01}): via(0, 2, 4, 6),
 				PortMaskEncode(&PortMask{Port: 0x8000, Mask: 0x01}): via(1, 3, 5, 7),
-				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}):   via(0, 2, 4, 6, 8, 9),
+				PortMaskEncode(&PortMask{Port: 0x16, Mask: 0x10}):   via(8, 9),
 			},
 			Action: map[string]IBitmap{
 				ProtoMaskEncode(&ProtoMask{Proto: 0x01, Mask: 0x08}): via(0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
