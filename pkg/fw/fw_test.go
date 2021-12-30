@@ -73,6 +73,15 @@ func Test_write(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
+			ss, ok := (s).(*fwMgr)
+			if ok {
+				ss.protoTable.GCTable(ctx)
+				ss.actionTable.GCTable(ctx)
+				ss.srcIpTable.GCTable(ctx)
+				ss.srcPortTable.GCTable(ctx)
+				ss.dstIpTable.GCTable(ctx)
+				ss.dstPortTable.GCTable(ctx)
+			}
 		}
 		t.Run(n, f)
 	}

@@ -262,6 +262,17 @@ func Test_hash_in_map(t *testing.T) {
 				t.Fatal(fmt.Sprintf("%v != %v", kk, kk2))
 				return
 			}
+			//5. 回收表
+			err = inner.GCTable(ctx)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
+			err = outer.GCTable(ctx)
+			if err != nil {
+				t.Fatal(err)
+				return
+			}
 		}
 		t.Run(n, f)
 	}
