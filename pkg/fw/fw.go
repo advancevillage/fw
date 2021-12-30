@@ -2,10 +2,13 @@ package fw
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/advancevillage/3rd/logx"
@@ -13,6 +16,7 @@ import (
 	"github.com/advancevillage/fw/pkg/meta"
 	"github.com/advancevillage/fw/pkg/rule"
 	"github.com/advancevillage/fw/proto"
+	enc "github.com/golang/protobuf/proto"
 )
 
 //匹配规则: 16Byte
@@ -718,7 +722,8 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 		rules = append(rules, rule)
 	}
 
-	return rules, nil
+	//端口区间合并
+	return mgr.portMerge(rules), nil
 }
 
 func (mgr *fwMgr) isEmptyU8(a *rule.ProtoMask) bool {
@@ -730,5 +735,119 @@ func (mgr *fwMgr) isEmptyU16(a *rule.PortMask) bool {
 }
 
 func (mgr *fwMgr) isEmptyU32(a *rule.IpMask) bool {
-	return a.Ip == 0xffffffff && a.Mask == 0xff
+	return a.Ip == 0xfffffff && a.Mask == 0xff
+}
+
+func (mgr *fwMgr) portMerge(rules []*proto.FwRule) []*proto.FwRule {
+	//端口区间合并
+	var srcPort = make(map[string][]string) //base64: ["22-23","23-31","32-63"...]
+	var rule = &proto.FwRule{}
+	for _, v := range rules {
+		rule.Protocol = v.GetProtocol()
+		rule.SrcIp = v.GetSrcIp()
+		rule.DstIp = v.GetDstIp()
+		rule.DstPort = v.GetDstPort()
+		rule.Action = v.GetAction()
+
+		var k = mgr.ruleEncode(rule)
+		if _, ok := srcPort[k]; ok {
+			srcPort[k] = append(srcPort[k], v.GetSrcPort())
+		} else {
+			srcPort[k] = []string{v.GetSrcPort()}
+		}
+	}
+
+	rules = rules[:0]
+	for k, v := range srcPort {
+		var item = mgr.ruleDecode(k)
+		if item == nil {
+			continue
+		}
+		v = mgr.merge(v)
+		for i := range v {
+			rules = append(rules, &proto.FwRule{
+				Protocol: item.GetProtocol(),
+				SrcIp:    item.GetSrcIp(),
+				DstIp:    item.GetDstIp(),
+				DstPort:  item.GetDstPort(),
+				SrcPort:  v[i],
+				Action:   item.GetAction(),
+			})
+		}
+	}
+
+	return rules
+}
+
+func (mgr *fwMgr) merge(interval []string) []string {
+	var sample = make([][]int, 0, len(interval))
+	for _, v := range interval {
+		a, err := strconv.Atoi(strings.Split(v, "-")[0])
+		if err != nil {
+			return nil
+		}
+		b, err := strconv.Atoi(strings.Split(v, "-")[1])
+		if err != nil {
+			return nil
+		}
+		sample = append(sample, []int{a, b})
+	}
+	sample = merge(sample)
+	interval = interval[:0]
+	for _, v := range sample {
+		if v[0] == v[1] {
+			interval = append(interval, fmt.Sprintf("%d", v[0]))
+		} else if v[0] < v[1] {
+			interval = append(interval, fmt.Sprintf("%d-%d", v[0], v[1]))
+		} else {
+			continue
+		}
+	}
+	return interval
+}
+
+func (mgr *fwMgr) ruleEncode(rule *proto.FwRule) string {
+	var b, err = enc.Marshal(rule)
+	if err != nil {
+		return err.Error()
+	}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func (mgr *fwMgr) ruleDecode(rule string) *proto.FwRule {
+	b, err := base64.StdEncoding.DecodeString(rule)
+	if err != nil {
+		return nil
+	}
+	var a = &proto.FwRule{}
+	err = enc.Unmarshal(b, a)
+	if err != nil {
+		return nil
+	}
+	return a
+}
+
+func merge(intervals [][]int) [][]int {
+	//对区间左边界升序排序
+	sort.Slice(intervals, func(i, j int) bool {
+		return intervals[i][0] < intervals[j][0]
+	})
+	var (
+		r    = [][]int{}
+		prev = intervals[0] //初始值
+	)
+
+	for i := 1; i < len(intervals); i++ {
+		var cur = intervals[i]
+		if prev[1] < cur[0] { //左边界 > 右边界
+			r = append(r, prev)
+			prev = cur
+			continue
+		}
+		if prev[1] < cur[1] {
+			prev[1] = cur[1]
+		}
+	}
+	r = append(r, prev)
+	return r
 }
