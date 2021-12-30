@@ -710,7 +710,7 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			break
 		}
 
-		mgr.logger.Infow(ctx, "index", "i", i, "protocol", mgr.isEmptyU8(protocol))
+		mgr.logger.Infow(ctx, "index", "i", i, "protocol", mgr.isEmptyU8(protocol), "srcPort", mgr.isEmptyU16(srcPort), "srcIp", mgr.isEmptyU32(srcIp), "dstIp", mgr.isEmptyU32(dstIp), "dstPort", mgr.isEmptyU16(dstPort), "action", mgr.isEmptyU8(action))
 
 		var rule = &proto.FwRule{
 			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
