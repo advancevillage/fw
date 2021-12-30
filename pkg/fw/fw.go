@@ -706,7 +706,7 @@ func (mgr *fwMgr) isEmptyU16(a *rule.PortMask) bool {
 }
 
 func (mgr *fwMgr) isEmptyU32(a *rule.IpMask) bool {
-	return a.Ip == 0xfffffff && a.Mask == 0xff
+	return a.Ip == 0xffffffff && a.Mask == 0xff
 }
 
 func (mgr *fwMgr) portMerge(rules []*proto.FwRule) []*proto.FwRule {
