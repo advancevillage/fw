@@ -161,7 +161,7 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 		buf    []byte
 		err    error
 	)
-	a.logger.Infow(ctx, "bpftool", cmd.String())
+	a.logger.Infow(ctx, "bpftool", "cmd", cmd.String())
 	stdOut, err = cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -198,7 +198,7 @@ func (a *bpftool) run(ctx context.Context, reply interface{}, errs interface{}) 
 func (a *bpftool) unlink(ctx context.Context, file string) error {
 	file = fmt.Sprintf("%s/%s", BPFFS, file)
 	var cmd = exec.CommandContext(ctx, "unlink", file)
-	a.logger.Infow(ctx, "bpftool", cmd.String())
+	a.logger.Infow(ctx, "bpftool", "cmd", cmd.String())
 	var err = cmd.Run()
 	if err != nil {
 		return err
