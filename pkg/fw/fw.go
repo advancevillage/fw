@@ -723,7 +723,7 @@ func (mgr *fwMgr) analyze(table *proto.BpfTable) ([]*proto.FwRule, error) {
 	}
 
 	//端口区间合并
-	return mgr.portMerge(rules), nil
+	return rules, nil
 }
 
 func (mgr *fwMgr) isEmptyU8(a *rule.ProtoMask) bool {

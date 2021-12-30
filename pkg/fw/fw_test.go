@@ -8,6 +8,7 @@ import (
 
 	"github.com/advancevillage/3rd/logx"
 	"github.com/advancevillage/fw/proto"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -86,4 +87,22 @@ func Test_write(t *testing.T) {
 		t.Run(n, f)
 	}
 
+}
+
+var portMergeTest = map[string]struct {
+	rule []*proto.FwRule
+	exp  []*proto.FwRule
+}{
+	"case1": {},
+}
+
+func Test_port_merge(t *testing.T) {
+	var s = &fwMgr{}
+	for n, p := range portMergeTest {
+		f := func(t *testing.T) {
+			act := s.portMerge(p.rule)
+			assert.Equal(t, p.exp, act)
+		}
+		t.Run(n, f)
+	}
 }
