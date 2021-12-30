@@ -358,7 +358,6 @@ func (mgr *fwMgr) readU32Table(ctx context.Context, tableCli bpf.ITable, zone in
 			tableCli.DeleteTable(ctx, kk)
 			continue
 		}
-		fmt.Println("u32", kk, vv)
 		mask = kk[0] - 0x08*0x08
 		ip = uint32(kk[0x0c]) << 24
 		ip |= uint32(kk[0x0d]) << 16
@@ -580,6 +579,7 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("ip encode err")
 			}
+			fmt.Println("ip", o.Ip, "mask", o.Mask, "bitmap", b)
 
 			var (
 				cur   = i / 8
@@ -648,7 +648,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("ip encode err")
 			}
-			mgr.logger.Infow(ctx, "dstIp", "ip", o.Ip, "b", b)
 
 			var (
 				cur   = i / 8
@@ -710,8 +709,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) && mgr.isEmptyU32(dstIp) && mgr.isEmptyU16(dstPort) && mgr.isEmptyU8(action) {
 			break
 		}
-
-		mgr.logger.Infow(ctx, "index", "i", i, "protocol", mgr.isEmptyU8(protocol), "srcPort", mgr.isEmptyU16(srcPort), "srcIp", mgr.isEmptyU32(srcIp), "dstIp", mgr.isEmptyU32(dstIp), "dstPort", mgr.isEmptyU16(dstPort), "action", mgr.isEmptyU8(action))
 
 		var rule = &proto.FwRule{
 			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
