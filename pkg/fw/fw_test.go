@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/advancevillage/3rd/logx"
 	"github.com/advancevillage/fw/proto"
 )
 
@@ -16,7 +17,6 @@ func init() {
 var writeTestData = map[string]struct {
 	version int
 	rules   []*proto.FwRule
-	debug   bool
 }{
 	"case1": {
 		version: 0,
@@ -50,12 +50,16 @@ var writeTestData = map[string]struct {
 				Action:   "drop",
 			},
 		},
-		debug: false,
 	},
 }
 
 func Test_write(t *testing.T) {
-	var s, err = NewFwMgr(4)
+	logger, err := logx.NewLogger("info")
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	s, err := NewFwMgr(logger, 4)
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -65,7 +69,7 @@ func Test_write(t *testing.T) {
 			var ctx, cancel = context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 			err = s.Write(ctx, p.version, p.rules)
-			if err != nil && !p.debug {
+			if err != nil {
 				t.Fatal(err)
 				return
 			}
