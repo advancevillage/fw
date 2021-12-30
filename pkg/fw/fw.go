@@ -573,7 +573,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("ip encode err")
 			}
-			fmt.Println("i", i, "ip", o.Ip, "mask", o.Mask, "bitmap", b)
 
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
@@ -679,7 +678,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) && mgr.isEmptyU32(dstIp) && mgr.isEmptyU16(dstPort) && mgr.isEmptyU8(action) {
 			break
 		}
-		fmt.Println("i", i)
 
 		var rule = &proto.FwRule{
 			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
@@ -694,7 +692,7 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 	}
 
 	//端口区间合并
-	return rules, nil
+	return mgr.portMerge(ctx, rules), nil
 }
 
 func (mgr *fwMgr) isEmptyU8(a *rule.ProtoMask) bool {
@@ -709,7 +707,7 @@ func (mgr *fwMgr) isEmptyU32(a *rule.IpMask) bool {
 	return a.Ip == 0xffffffff && a.Mask == 0xff
 }
 
-func (mgr *fwMgr) portMerge(rules []*proto.FwRule) []*proto.FwRule {
+func (mgr *fwMgr) portMerge(ctx context.Context, rules []*proto.FwRule) []*proto.FwRule {
 	//端口区间合并
 	var srcPort = make(map[string][]string) //base64: ["22-23","23-31","32-63"...]
 	var rule = &proto.FwRule{}
@@ -747,6 +745,41 @@ func (mgr *fwMgr) portMerge(rules []*proto.FwRule) []*proto.FwRule {
 		}
 	}
 
+	var dstPort = make(map[string][]string) //base64: ["22-23","23-31","32-63"...]
+	for _, v := range rules {
+		rule.Protocol = v.GetProtocol()
+		rule.SrcIp = v.GetSrcIp()
+		rule.DstIp = v.GetDstIp()
+		rule.SrcPort = v.GetSrcPort()
+		rule.Action = v.GetAction()
+
+		var k = mgr.ruleEncode(rule)
+		if _, ok := dstPort[k]; ok {
+			dstPort[k] = append(dstPort[k], v.GetDstPort())
+		} else {
+			dstPort[k] = []string{v.GetDstPort()}
+		}
+	}
+
+	rules = rules[:0]
+	for k, v := range dstPort {
+		var item = mgr.ruleDecode(k)
+		if item == nil {
+			continue
+		}
+		v = mgr.merge(v)
+		for i := range v {
+			rules = append(rules, &proto.FwRule{
+				Protocol: item.GetProtocol(),
+				SrcIp:    item.GetSrcIp(),
+				DstIp:    item.GetDstIp(),
+				DstPort:  v[i],
+				SrcPort:  item.GetSrcPort(),
+				Action:   item.GetAction(),
+			})
+		}
+	}
+
 	return rules
 }
 
@@ -766,11 +799,16 @@ func (mgr *fwMgr) merge(interval []string) []string {
 	sample = merge(sample)
 	interval = interval[:0]
 	for _, v := range sample {
-		if v[0] == v[1] {
+		switch {
+		case v[0] == 0 && v[1] == 0:
+			interval = append(interval, "")
+		case v[0] == 0 && v[1] == 65535:
+			interval = append(interval, "")
+		case v[0] == v[1]:
 			interval = append(interval, fmt.Sprintf("%d", v[0]))
-		} else if v[0] < v[1] {
+		case v[0] < v[1]:
 			interval = append(interval, fmt.Sprintf("%d-%d", v[0], v[1]))
-		} else {
+		default:
 			continue
 		}
 	}
@@ -810,7 +848,7 @@ func merge(intervals [][]int) [][]int {
 
 	for i := 1; i < len(intervals); i++ {
 		var cur = intervals[i]
-		if prev[1] < cur[0] { //左边界 > 右边界
+		if prev[1] < cur[0]-1 { //左边界 > 右边界 [0,21] [22, 100]
 			r = append(r, prev)
 			prev = cur
 			continue
