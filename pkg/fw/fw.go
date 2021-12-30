@@ -648,6 +648,7 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("ip encode err")
 			}
+			mgr.logger.Infow(ctx, "dstIp", "ip", o.Ip, "b", b)
 
 			var (
 				cur   = i / 8
