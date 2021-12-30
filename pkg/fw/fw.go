@@ -501,6 +501,12 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			dstPort  = &rule.PortMask{Port: 0xffff, Mask: 0xff}
 			action   = &rule.ProtoMask{Proto: 0xff, Mask: 0xff}
 		)
+
+		var (
+			cur   = i / 8
+			pos   = i % 8
+			probe = uint8(0x80)
+		)
 		for k, v := range table.Protocol {
 			//bitmap
 			b, err := hex.DecodeString(v)
@@ -511,12 +517,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("proto encode err")
 			}
-
-			var (
-				cur   = i / 8
-				pos   = i % 8
-				probe = uint8(0x80)
-			)
 
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
@@ -546,12 +546,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 				return nil, errors.New("action encode err")
 			}
 
-			var (
-				cur   = i / 8
-				pos   = i % 8
-				probe = uint8(0x80)
-			)
-
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
 			}
@@ -579,13 +573,7 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("ip encode err")
 			}
-			fmt.Println("ip", o.Ip, "mask", o.Mask, "bitmap", b)
-
-			var (
-				cur   = i / 8
-				pos   = i % 8
-				probe = uint8(0x80)
-			)
+			fmt.Println("i", i, "ip", o.Ip, "mask", o.Mask, "bitmap", b)
 
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
@@ -615,12 +603,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 				return nil, errors.New("port encode err")
 			}
 
-			var (
-				cur   = i / 8
-				pos   = i % 8
-				probe = uint8(0x80)
-			)
-
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
 			}
@@ -648,12 +630,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 			if nil == o {
 				return nil, errors.New("ip encode err")
 			}
-
-			var (
-				cur   = i / 8
-				pos   = i % 8
-				probe = uint8(0x80)
-			)
 
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
@@ -683,12 +659,6 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 				return nil, errors.New("port encode err")
 			}
 
-			var (
-				cur   = i / 8
-				pos   = i % 8
-				probe = uint8(0x80)
-			)
-
 			if b[cur]&(probe>>pos) == 0x0 {
 				continue
 			}
@@ -709,6 +679,7 @@ func (mgr *fwMgr) analyze(ctx context.Context, table *proto.BpfTable) ([]*proto.
 		if mgr.isEmptyU8(protocol) && mgr.isEmptyU16(srcPort) && mgr.isEmptyU32(srcIp) && mgr.isEmptyU32(dstIp) && mgr.isEmptyU16(dstPort) && mgr.isEmptyU8(action) {
 			break
 		}
+		fmt.Println("i", i)
 
 		var rule = &proto.FwRule{
 			Protocol: rule.ProtoStr(protocol.Proto, protocol.Mask),
