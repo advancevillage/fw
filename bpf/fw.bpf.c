@@ -6,13 +6,6 @@
 #include <linux/udp.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
-
-#define keySize     0x0000000000000010
-#define valueSize   0x0000000000000008
-#define maxEntry    (0x01 << 16) 
-#define bpfTag      0x0000000000000002
-#define bpfCommit   0xb96d7ffd7a863adc
-
 //定义元数据
 //map name:         metadata
 //map key_size:     0x10
@@ -28,49 +21,49 @@ struct bpf_map_def SEC("maps") metadata = {
 
 struct bpf_map_def SEC("maps") ipv4_proto = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = keySize,
-    .value_size	 = valueSize,
-    .max_entries = maxEntry,
+    .key_size	 = __KEY_SIZE__,
+    .value_size	 = __VAL_SIZE__,
+    .max_entries = __MAX_ENTRY__,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
 struct bpf_map_def SEC("maps") ipv4_action = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = keySize,
-    .value_size	 = valueSize,
-    .max_entries = maxEntry,
+    .key_size	 = __KEY_SIZE__,
+    .value_size	 = __VAL_SIZE__,
+    .max_entries = __MAX_ENTRY__,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
 struct bpf_map_def SEC("maps") ipv4_nw_dst = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = keySize,
-    .value_size	 = valueSize,
-    .max_entries = maxEntry,
+    .key_size	 = __KEY_SIZE__,
+    .value_size	 = __VAL_SIZE__,
+    .max_entries = __MAX_ENTRY__,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
 struct bpf_map_def SEC("maps") ipv4_nw_src = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = keySize,
-    .value_size	 = valueSize,
-    .max_entries = maxEntry,
+    .key_size	 = __KEY_SIZE__,
+    .value_size	 = __VAL_SIZE__,
+    .max_entries = __MAX_ENTRY__,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
 struct bpf_map_def SEC("maps") ipv4_tp_dst = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = keySize,
-    .value_size	 = valueSize,
-    .max_entries = maxEntry,
+    .key_size	 = __KEY_SIZE__,
+    .value_size	 = __VAL_SIZE__,
+    .max_entries = __MAX_ENTRY__,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
 struct bpf_map_def SEC("maps") ipv4_tp_src = {
     .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = keySize,
-    .value_size	 = valueSize,
-    .max_entries = maxEntry,
+    .key_size	 = __KEY_SIZE__,
+    .value_size	 = __VAL_SIZE__,
+    .max_entries = __MAX_ENTRY__,
     .map_flags	 = BPF_F_NO_PREALLOC,
 };
 
@@ -79,10 +72,10 @@ static __inline void update_meta_info() {
     //格式: x.y.z [x=2B y=2B z=4B]
     char    name[0x10];
     char    value[0x08];
-    __be64  tag     = bpfTag;
-    __be64  commit  = bpfCommit;
-    __be64  ksize   = keySize;
-    __be64  vsize   = valueSize;
+    __be64  tag     = __TAG__;
+    __be64  commit  = __COMMIT__;
+    __be64  ksize   = __KEY_SIZE__;
+    __be64  vsize   = __VAL_SIZE__;
     
     name[0x00] = 'b';
     name[0x01] = 'p';
@@ -218,7 +211,7 @@ static __inline unsigned char *query_meta_fw_zone() {
 }
 
 static __inline unsigned char* query_fw_proto_bits(unsigned char *zone, __u8 proto) {
-    unsigned char kk[keySize];
+    unsigned char kk[__KEY_SIZE__];
     kk[0x00] = 0x60;
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
@@ -241,7 +234,7 @@ static __inline unsigned char* query_fw_proto_bits(unsigned char *zone, __u8 pro
 }
 
 static __inline unsigned char* query_fw_nw_src_bits(unsigned char *zone, __be32 src_ip) {
-    unsigned char kk[keySize];
+    unsigned char kk[__KEY_SIZE__];
     kk[0x00] = 0x60;
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
@@ -264,7 +257,7 @@ static __inline unsigned char* query_fw_nw_src_bits(unsigned char *zone, __be32 
 }
 
 static __inline unsigned char* query_fw_nw_dst_bits(unsigned char *zone, __be32 dst_ip) {
-    unsigned char kk[keySize];
+    unsigned char kk[__KEY_SIZE__];
     kk[0x00] = 0x60;
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
@@ -287,7 +280,7 @@ static __inline unsigned char* query_fw_nw_dst_bits(unsigned char *zone, __be32 
 }
 
 static __inline unsigned char* query_fw_tp_src_bits(unsigned char *zone, __be16 src_port) {
-    unsigned char kk[keySize];
+    unsigned char kk[__KEY_SIZE__];
     kk[0x00] = 0x60;
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
@@ -310,7 +303,7 @@ static __inline unsigned char* query_fw_tp_src_bits(unsigned char *zone, __be16 
 }
 
 static __inline unsigned char* query_fw_tp_dst_bits(unsigned char *zone, __be16 dst_port) {
-    unsigned char kk[keySize];
+    unsigned char kk[__KEY_SIZE__];
     kk[0x00] = 0x60;
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
@@ -333,7 +326,7 @@ static __inline unsigned char* query_fw_tp_dst_bits(unsigned char *zone, __be16 
 }
 
 static __inline unsigned char* query_fw_action_bits(unsigned char *zone, __u8 op) {
-    unsigned char kk[keySize];
+    unsigned char kk[__KEY_SIZE__];
     kk[0x00] = 0x60;
     kk[0x01] = 0x00;
     kk[0x02] = 0x00;
@@ -412,8 +405,8 @@ int xpd_handle_fw(struct xdp_md *ctx) {
     //1. 定义变量
     int rc = XDP_DROP;  //默认拒绝
 
-    void *data = (void*)(uintptr_t)(ctx->data);
-    void *data_end = (void*)(uintptr_t)(ctx->data_end);
+    void *data = (void*)(ctx->data);
+    void *data_end = (void*)(ctx->data_end);
 
     //2. 解析以太网协议头
     struct ethhdr *eth = data;
