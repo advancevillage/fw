@@ -359,32 +359,32 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
     if (!proto_bits) {
         goto leave;
     }
-    bpf_printk("bits=%x proto=%x\n", *proto_bits, proto); 
+    //#bpf_printk("bits=%x proto=%x\n", *proto_bits, proto); 
     unsigned char *nw_src_bits = query_fw_nw_src_bits(zone, src_ip); 
     if (!nw_src_bits) {
         goto leave;
     }
-    bpf_printk("bits=%x nw_src=%x\n", *nw_src_bits, src_ip); 
+    //#bpf_printk("bits=%x nw_src=%x\n", *nw_src_bits, src_ip); 
     unsigned char *nw_dst_bits = query_fw_nw_dst_bits(zone, dst_ip);
     if (!nw_dst_bits) {
         goto leave;
     }
-    bpf_printk("bits=%x nw_dst=%x\n", *nw_dst_bits, dst_ip); 
+    //#bpf_printk("bits=%x nw_dst=%x\n", *nw_dst_bits, dst_ip); 
     unsigned char *tp_src_bits = query_fw_tp_src_bits(zone, src_port);
     if (!tp_src_bits) {
         goto leave;
     }
-    bpf_printk("bits=%x tp_src=%x\n", *tp_src_bits, src_port); 
+    //#bpf_printk("bits=%x tp_src=%x\n", *tp_src_bits, src_port); 
     unsigned char *tp_dst_bits = query_fw_tp_dst_bits(zone, dst_port);
     if (!tp_dst_bits) {
         goto leave;
     }
-    bpf_printk("bits=%x tp_dst=%x\n", *tp_dst_bits, dst_port); 
+    //#bpf_printk("bits=%x tp_dst=%x\n", *tp_dst_bits, dst_port); 
     unsigned char *accept = query_fw_action_bits(zone, 0x01);
     if (!accept) {
         goto leave;
     }
-    bpf_printk("bits=%x op=%x\n", *accept, 0x01); 
+    //#bpf_printk("bits=%x op=%x\n", *accept, 0x01); 
     unsigned char r[__VAL_SIZE__];
     int  i = 0;
     for (i = 0; i < __VAL_SIZE__; i++) {
