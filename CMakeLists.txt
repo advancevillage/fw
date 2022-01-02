@@ -45,17 +45,33 @@ execute_process(
 if(PROJECT_OS STREQUAL "darwin")
 execute_process(
     COMMAND sh -c "sed -i '' 's/__KEY_SIZE__/0x10/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i '' 's/__VAL_SIZE__/0x08/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i '' 's/__MAX_ENTRY__/0x10000/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i '' 's/__TAG__/0x${PROJECT_TAG}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i '' 's/__COMMIT__/0x${PROJECT_COMMIT}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
 )
 else()
 execute_process(
     COMMAND sh -c "sed -i 's/__KEY_SIZE__/0x10/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i 's/__VAL_SIZE__/0x08/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i 's/__MAX_ENTRY__/0x10000/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i 's/__TAG__/0x${PROJECT_TAG}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
     COMMAND sh -c "sed -i 's/__COMMIT__/0x${PROJECT_COMMIT}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
 )
 endif()
