@@ -1,6 +1,7 @@
 install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/bin/${PROJECT_NAME} DESTINATION ./bin)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/deploy/${PROJECT_NAME}.service DESTINATION ./systemd)
 install(DIRECTORY conf DESTINATION .)
+install(DIRECTORY xdp  DESTINATION .)
 
 set(CPACK_PACKAGE_NAME                      "${PROJECT_NAME}")
 set(CPACK_PACKAGE_VERSION                   "${PROJECT_PKG_TAG}")

@@ -82,6 +82,12 @@ execute_process(
     COMMAND sh -c "CGO_ENABLED=0 GOOS=${PROJECT_OS} GOARCH=amd64 go build -a -ldflags '-X github.com/advancevillage/fw/pkg/meta.tag=0x${PROJECT_TAG} -X github.com/advancevillage/fw/pkg/meta.commit=0x${PROJECT_COMMIT}' -o ${CMAKE_CURRENT_SOURCE_DIR}/bin/${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/cmd/cmd.go"
 )
 
+execute_process(
+    COMMAND sh -c "rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/xdp"
+    COMMAND sh -c "mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/xdp"
+    COMMAND sh -c "clang -g -Wall -O2 -c -target bpf -D__TARGET_ARCH_x86 ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c -I/usr/include/x86_64-linux-gnu/ -o ${CMAKE_CURRENT_SOURCE_DIR}/xdp/fw.bpf.o"
+)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/deploy/${PROJECT_NAME}.cmake)
 
 if(PROJECT_OS STREQUAL "darwin")
