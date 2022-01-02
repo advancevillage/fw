@@ -47,7 +47,7 @@ type queryFwResponse struct {
 	Rules []*proto.FwRule
 }
 
-func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWR) {
+func (s *Srv) httpHandler(ctx context.Context, wr netx.IHTTPWriteReader) {
 	//1. 解析参数
 	var reply = &proto.ActionResponse{
 		Code: SrvErr,
