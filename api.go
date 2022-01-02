@@ -21,7 +21,7 @@ var (
 	JsonFormatErr      = "json format error"
 	NotSupportMsg      = "not support action error"
 	FwUpdateMsg        = "update firewall error"
-	FwQueryMsg         = "queryfirewall error"
+	FwQueryMsg         = "query firewall error"
 
 	SrvOk  = uint32(http.StatusOK)
 	SrvErr = uint32(http.StatusInternalServerError)

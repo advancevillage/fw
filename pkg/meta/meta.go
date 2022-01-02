@@ -89,12 +89,10 @@ func (i *metadata) ver() (uint64, uint64) {
 
 	a, err := strconv.ParseUint(tag, 16, 64)
 	if err != nil {
-		fmt.Println(tag, err)
 		a = uint64(0x0)
 	}
 	b, err := strconv.ParseUint(commit, 16, 64)
 	if err != nil {
-		fmt.Println(commit, err)
 		b = uint64(0x0)
 	}
 	return a, b

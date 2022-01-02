@@ -412,8 +412,8 @@ int xpd_handle_fw(struct xdp_md *ctx) {
     //1. 定义变量
     int rc = XDP_DROP;  //默认拒绝
 
-    void *data = (void *)ctx->data;
-    void *data_end = (void *)ctx->data_end;
+    void *data = (void*)(uintptr_t)(ctx->data);
+    void *data_end = (void*)(uintptr_t)(ctx->data_end);
 
     //2. 解析以太网协议头
     struct ethhdr *eth = data;
