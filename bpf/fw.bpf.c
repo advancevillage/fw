@@ -385,9 +385,9 @@ static __inline int security_strategy(__u8 proto, __be32 src_ip, __be16 src_port
         goto leave;
     }
     bpf_printk("bits=%x op=%x\n", *accept, 0x01); 
-    unsigned char r[valueSize];
+    unsigned char r[__VAL_SIZE__];
     int  i = 0;
-    for (i = 0; i < valueSize; i++) {
+    for (i = 0; i < __VAL_SIZE__; i++) {
         r[i] =  proto_bits[i] & nw_src_bits[i] & nw_dst_bits[i] & tp_src_bits[i] & tp_dst_bits[i] & accept[i];
         if (r[i] > 0x00) {
             rc = XDP_PASS;
