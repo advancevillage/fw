@@ -50,7 +50,7 @@ func NewSrv(cfg *SrvCfg) (*Srv, error) {
 		panic(err)
 	}
 	//3. fw
-	fwCli, err := fw.NewFwMgr(logger, 8)
+	fwCli, err := fw.NewFwMgr(logger, 128) //最大规则数1024条
 	if err != nil {
 		panic(err)
 	}
