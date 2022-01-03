@@ -43,39 +43,27 @@ execute_process(
 
 ## 流程编排
 if(PROJECT_OS STREQUAL "darwin")
-execute_process(
-    COMMAND sh -c "sed -i '' 's/__KEY_SIZE__/0x10/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i '' 's/__VAL_SIZE__/0x80/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i '' 's/__MAX_ENTRY__/0x10000/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i '' 's/__TAG__/0x${PROJECT_TAG}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i '' 's/__COMMIT__/0x${PROJECT_COMMIT}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
+    set(PROJECT_SED "sed -i ''")
 else()
-execute_process(
-    COMMAND sh -c "sed -i 's/__KEY_SIZE__/0x10/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i 's/__VAL_SIZE__/0x80/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i 's/__MAX_ENTRY__/0x10000/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i 's/__TAG__/0x${PROJECT_TAG}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
-execute_process(
-    COMMAND sh -c "sed -i 's/__COMMIT__/0x${PROJECT_COMMIT}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
-)
+    set(PROJECT_SED "sed -i ")
 endif()
+execute_process(
+    COMMAND sh -c "${PROJECT_SED} 's/__KEY_SIZE__/0x10/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
+    COMMAND sh -c "${PROJECT_SED} 's/__VAL_SIZE__/0x100/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
+    COMMAND sh -c "${PROJECT_SED} 's/__MAX_ENTRY__/0x10000/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
+    COMMAND sh -c "${PROJECT_SED} 's/__TAG__/0x${PROJECT_TAG}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
+execute_process(
+    COMMAND sh -c "${PROJECT_SED} 's/__COMMIT__/0x${PROJECT_COMMIT}/g' ${CMAKE_CURRENT_SOURCE_DIR}/bpf/fw.bpf.c"
+)
 
+# 编译二进制文件
 execute_process(
     COMMAND sh -c "rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/bin"
     COMMAND sh -c "mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/bin"
