@@ -9,5 +9,4 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 _build
 build
-*.pdf
 xdp
