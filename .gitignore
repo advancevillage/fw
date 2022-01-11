@@ -10,3 +10,4 @@ CPackSourceConfig.cmake
 _build
 build
 xdp
+.DS_Store

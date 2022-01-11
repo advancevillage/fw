@@ -1,7 +1,6 @@
 #https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "cugriver@163.com")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libbpf0 (>=0.3.0),libbpf-dev (>=0.3.0)")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/deploy/deb/postinst;${CMAKE_CURRENT_SOURCE_DIR}/deploy/deb/prerm;")
 
 ##安装编排脚本
