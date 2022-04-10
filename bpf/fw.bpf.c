@@ -11,61 +11,61 @@
 //map key_size:     0x10
 //map value_size:   0x08
 //map max_entries:  0x20
-struct bpf_map_def SEC("maps") metadata = {
-    .type        = BPF_MAP_TYPE_HASH,
-    .key_size	 = 0x10,
-    .value_size	 = 0x08,
-    .max_entries = 0x20,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_HASH);
+   __type(key,          0x10);
+   __type(value,        0x08);
+   __uint(max_entries,  0x20);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} metadata SEC(".maps");
 
-struct bpf_map_def SEC("maps") ipv4_proto = {
-    .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = __KEY_SIZE__,
-    .value_size	 = __VAL_SIZE__,
-    .max_entries = __MAX_ENTRY__,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+   __type(key,          __KEY_SIZE__);
+   __type(value,        __VAL_SIZE__);
+   __uint(max_entries,  __MAX_ENTRY__);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} ipv4_proto SEC(".maps"); 
 
-struct bpf_map_def SEC("maps") ipv4_action = {
-    .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = __KEY_SIZE__,
-    .value_size	 = __VAL_SIZE__,
-    .max_entries = __MAX_ENTRY__,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+   __type(key,          __KEY_SIZE__);
+   __type(value,        __VAL_SIZE__);
+   __uint(max_entries,  __MAX_ENTRY__);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} ipv4_action SEC(".maps"); 
 
-struct bpf_map_def SEC("maps") ipv4_nw_dst = {
-    .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = __KEY_SIZE__,
-    .value_size	 = __VAL_SIZE__,
-    .max_entries = __MAX_ENTRY__,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+   __type(key,          __KEY_SIZE__);
+   __type(value,        __VAL_SIZE__);
+   __uint(max_entries,  __MAX_ENTRY__);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} ipv4_nw_dst SEC(".maps"); 
 
-struct bpf_map_def SEC("maps") ipv4_nw_src = {
-    .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = __KEY_SIZE__,
-    .value_size	 = __VAL_SIZE__,
-    .max_entries = __MAX_ENTRY__,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+   __type(key,          __KEY_SIZE__);
+   __type(value,        __VAL_SIZE__);
+   __uint(max_entries,  __MAX_ENTRY__);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} ipv4_nw_src SEC(".maps"); 
 
-struct bpf_map_def SEC("maps") ipv4_tp_dst = {
-    .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = __KEY_SIZE__,
-    .value_size	 = __VAL_SIZE__,
-    .max_entries = __MAX_ENTRY__,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+   __type(key,          __KEY_SIZE__);
+   __type(value,        __VAL_SIZE__);
+   __uint(max_entries,  __MAX_ENTRY__);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} ipv4_tp_dst SEC(".maps"); 
 
-struct bpf_map_def SEC("maps") ipv4_tp_src = {
-    .type        = BPF_MAP_TYPE_LPM_TRIE,
-    .key_size	 = __KEY_SIZE__,
-    .value_size	 = __VAL_SIZE__,
-    .max_entries = __MAX_ENTRY__,
-    .map_flags	 = BPF_F_NO_PREALLOC,
-};
+struct {
+   __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+   __type(key,          __KEY_SIZE__);
+   __type(value,        __VAL_SIZE__);
+   __uint(max_entries,  __MAX_ENTRY__);
+   __uint(map_flags, BPF_F_NO_PREALLOC);
+} ipv4_tp_src SEC(".maps"); 
 
 static __inline void update_meta_info() {
     //bpf.tag
