@@ -6,11 +6,8 @@
 #include <linux/udp.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
-//定义元数据
-//map name:         metadata
-//map key_size:     0x10
-//map value_size:   0x08
-//map max_entries:  0x20
+
+//libpf 0.0.8 提交修改: https://lore.kernel.org/bpf/87lez87rbm.fsf@toke.dk/T/
 struct {
    __uint(type, BPF_MAP_TYPE_HASH);
    __type(key,          0x10);
